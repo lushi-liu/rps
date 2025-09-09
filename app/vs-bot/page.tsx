@@ -2,13 +2,9 @@
 
 import React, { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import {
-  FaHandRock,
-  FaHandPaper,
-  FaHandScissors,
-  FaQuestion,
-} from "react-icons/fa";
+import { FaHandRock, FaHandPaper, FaHandScissors } from "react-icons/fa";
 import { IconType } from "react-icons";
+import { Card } from "../../components/Card";
 
 // Define card types
 type CardType = "Rock" | "Paper" | "Scissors";
@@ -27,11 +23,11 @@ interface GameState {
   oppScore: number;
 }
 
-// Base deck: 10 of each card type
+// Base deck: 4 of each card type
 const baseDeck: CardType[] = [
-  ...Array(10).fill("Rock" as CardType),
-  ...Array(10).fill("Paper" as CardType),
-  ...Array(10).fill("Scissors" as CardType),
+  ...Array(4).fill("Rock" as CardType),
+  ...Array(4).fill("Paper" as CardType),
+  ...Array(4).fill("Scissors" as CardType),
 ];
 
 // Shuffle array (Fisher-Yates)
@@ -44,17 +40,16 @@ const shuffle = <T,>(array: T[]): T[] => {
   return shuffled;
 };
 
-// Initialize hand with exactly 22 cards
+// Initialize hand with exactly 8 cards
 const drawInitialHand = (deck: CardType[]): [CardType[], CardType[]] => {
   const shuffled = shuffle(deck);
-  const hand = shuffled.slice(8); // Last 22 cards
-  const remainingDeck = shuffled.slice(0, 8); // First 8 cards
-  console.log("Initial hand:", hand, "Deck:", remainingDeck); // Debug
+  const hand = shuffled.slice(0, 8);
+  const remainingDeck = shuffled.slice(8);
   return [hand, remainingDeck];
 };
 
-// Map card types to icons
-const cardIcons: Record<CardType, IconType> = {
+// Map card types to icons (exported for Card component)
+export const cardIcons: Record<CardType, IconType> = {
   Rock: FaHandRock,
   Paper: FaHandPaper,
   Scissors: FaHandScissors,
@@ -70,8 +65,8 @@ const getCardCounts = (hand: CardType[]): Record<CardType, number> => {
 
 export default function RPSGame() {
   // Initialize decks and hands
-  const [playerDeck, playerHand] = drawInitialHand(baseDeck);
-  const [oppDeck, oppHand] = drawInitialHand(baseDeck);
+  const [playerHand, playerDeck] = drawInitialHand(baseDeck);
+  const [oppHand, oppDeck] = drawInitialHand(baseDeck);
 
   const [state, setState] = useState<GameState>({
     playerHand,
@@ -99,15 +94,15 @@ export default function RPSGame() {
       (c, i) => c !== oppChoice || i !== state.oppHand.indexOf(oppChoice)
     );
 
-    // Draw one card if hand is below 22 and deck isn't empty
+    // Draw one card if hand is below 8 and deck isn't empty
     const newPlayerDeck = [...state.playerDeck];
     const newOppDeck = [...state.oppDeck];
     const playerDraw =
-      newPlayerHand.length < 22 && newPlayerDeck.length > 0
+      newPlayerHand.length < 8 && newPlayerDeck.length > 0
         ? newPlayerDeck.shift()
         : null;
     const oppDraw =
-      newOppHand.length < 22 && newOppDeck.length > 0
+      newOppHand.length < 8 && newOppDeck.length > 0
         ? newOppDeck.shift()
         : null;
 
@@ -213,12 +208,11 @@ export default function RPSGame() {
               {Array(state.oppHand.length)
                 .fill(null)
                 .map((_, index) => (
-                  <motion.div
+                  <Card
                     key={`opp-card-${index}`}
-                    className="w-16 h-24 bg-white rounded-lg shadow-lg flex items-center justify-center border-2 border-gray-300"
-                  >
-                    <FaQuestion className="text-4xl text-gray-500" />
-                  </motion.div>
+                    type={null}
+                    isOpponent={true}
+                  />
                 ))}
             </div>
           </div>
@@ -231,47 +225,26 @@ export default function RPSGame() {
             <div className="flex justify-center gap-12 mb-4">
               <div className="text-center">
                 <p className="text-lg font-semibold text-gray-700">You</p>
-                <motion.div
-                  className="w-24 h-36 bg-white rounded-lg shadow-lg flex items-center justify-center border-2 border-gray-300"
-                  initial={{ rotateY: 0 }}
-                  animate={{
-                    rotateY: state.showResult && state.playerCard ? 360 : 0,
-                  }}
-                  transition={{ duration: 0.5 }}
-                >
-                  {state.playerCard && state.showResult ? (
-                    React.createElement(cardIcons[state.playerCard], {
-                      className: "text-6xl text-gray-700",
-                    })
-                  ) : (
-                    <FaQuestion className="text-6xl text-gray-500" />
-                  )}
-                </motion.div>
+                <Card
+                  type={state.playerCard}
+                  showResult={state.showResult}
+                  isInPlayArea={true}
+                />
               </div>
               <div className="text-center">
                 <p className="text-lg font-semibold text-gray-700">Opponent</p>
-                <motion.div
-                  className="w-24 h-36 bg-white rounded-lg shadow-lg flex items-center justify-center border-2 border-gray-300"
-                  initial={{ rotateY: 0 }}
-                  animate={{
-                    rotateY: state.showResult && state.oppCard ? 360 : 0,
-                  }}
-                  transition={{ duration: 0.5 }}
-                >
-                  {state.oppCard && state.showResult ? (
-                    React.createElement(cardIcons[state.oppCard], {
-                      className: "text-6xl text-gray-700",
-                    })
-                  ) : (
-                    <FaQuestion className="text-6xl text-gray-500" />
-                  )}
-                </motion.div>
+                <Card
+                  type={state.oppCard}
+                  showResult={state.showResult}
+                  isInPlayArea={true}
+                  isOpponent={true}
+                />
               </div>
             </div>
             <AnimatePresence>
               {state.result && (
                 <motion.p
-                  key={state.result} // Ensure animation triggers
+                  key={state.result}
                   className="text-2xl font-bold text-gray-800 text-center"
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
@@ -295,21 +268,13 @@ export default function RPSGame() {
             </h2>
             <div className="flex gap-2 flex-wrap">
               {state.playerHand.map((card, index) => (
-                <motion.div
-                  key={`${card}-${index}`} // Unique key for duplicates
-                  className={`w-16 h-24 bg-white rounded-lg shadow-lg flex items-center justify-center border-2 border-gray-300 ${
-                    state.showResult
-                      ? "opacity-50 cursor-not-allowed"
-                      : "cursor-pointer"
-                  }`}
-                  whileHover={state.showResult ? {} : { scale: 1.1, rotate: 2 }}
-                  whileTap={state.showResult ? {} : { scale: 0.95 }}
-                  onClick={() => !state.showResult && playCard(card, index)}
-                >
-                  {React.createElement(cardIcons[card], {
-                    className: "text-4xl text-gray-700",
-                  })}
-                </motion.div>
+                <Card
+                  key={`${card}-${index}`}
+                  type={card}
+                  isPlayable={true}
+                  showResult={state.showResult}
+                  onClick={() => playCard(card, index)}
+                />
               ))}
             </div>
           </div>
@@ -324,9 +289,11 @@ export default function RPSGame() {
             animate={{ opacity: 1 }}
           >
             <p className="text-2xl font-bold text-gray-800">
-              {state.playerHand.length === 0 && state.playerDeck.length === 0
+              {state.playerScore > state.oppScore
+                ? "You Win the Game!"
+                : state.oppScore > state.playerScore
                 ? "Opponent Wins the Game!"
-                : "You Win the Game!"}
+                : "Game Ends in a Tie!"}
             </p>
             <p className="text-lg text-gray-700 mt-2">
               Final Score: You {state.playerScore} - {state.oppScore} Opponent
