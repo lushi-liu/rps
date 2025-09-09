@@ -10,7 +10,7 @@ type CardType = "Rock" | "Paper" | "Scissors";
 interface CardProps {
   type: CardType | null; // null for face-down cards
   isPlayable?: boolean; // Whether card can be clicked (player hand)
-  isOpponent?: boolean; // Opponent cards are always face-down
+  isOpponent?: boolean; // Opponent cards are face-down unless in play area with showResult
   showResult?: boolean; // For play area reveal
   onClick?: () => void; // Click handler for player cards
   isInPlayArea?: boolean; // Larger size for play area
@@ -39,7 +39,9 @@ export const Card: React.FC<CardProps> = ({
       animate={{ rotateY: showResult && type && isInPlayArea ? 360 : 0 }}
       transition={{ duration: 0.5 }}
     >
-      {isOpponent || !type || (isInPlayArea && !showResult) ? (
+      {!type ||
+      (isInPlayArea && !showResult) ||
+      (isOpponent && !isInPlayArea) ? (
         <FaQuestion
           className={`text-${isInPlayArea ? "6xl" : "4xl"} text-gray-500`}
         />
