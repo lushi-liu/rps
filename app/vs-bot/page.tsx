@@ -7,7 +7,13 @@ import { IconType } from "react-icons";
 import { Card } from "../../components/Card";
 
 // Define card types
-type CardType = "Rock" | "Paper" | "Scissors";
+type CardType =
+  | "Rock"
+  | "Paper"
+  | "Scissors"
+  | "SuperRock"
+  | "SuperPaper"
+  | "SuperScissors";
 
 // Define game state interface
 interface GameState {
@@ -25,11 +31,14 @@ interface GameState {
   oppPlayedCards: CardType[];
 }
 
-// Base deck: 4 of each card type
+// Base deck: 4 of each regular, 2 of each super
 const baseDeck: CardType[] = [
   ...Array(4).fill("Rock" as CardType),
   ...Array(4).fill("Paper" as CardType),
   ...Array(4).fill("Scissors" as CardType),
+  ...Array(2).fill("SuperRock" as CardType),
+  ...Array(2).fill("SuperPaper" as CardType),
+  ...Array(2).fill("SuperScissors" as CardType),
 ];
 
 // Shuffle array (Fisher-Yates)
@@ -56,6 +65,9 @@ export const cardIcons: Record<CardType, IconType> = {
   Rock: FaHandRock,
   Paper: FaHandPaper,
   Scissors: FaHandScissors,
+  SuperRock: FaHandRock,
+  SuperPaper: FaHandPaper,
+  SuperScissors: FaHandScissors,
 };
 
 // Count cards for display (used for hand and played cards)
@@ -115,18 +127,38 @@ export default function RPSGame() {
     let result = "";
     let playerScore = state.playerScore;
     let oppScore = state.oppScore;
+
+    // Check for tie
     if (card === oppChoice) {
       result = "Tie!";
     } else if (
-      (card === "Rock" && oppChoice === "Scissors") ||
-      (card === "Paper" && oppChoice === "Rock") ||
-      (card === "Scissors" && oppChoice === "Paper")
+      (card.includes("Rock") && oppChoice.includes("Rock")) ||
+      (card.includes("Paper") && oppChoice.includes("Paper")) ||
+      (card.includes("Scissors") && oppChoice.includes("Scissors"))
     ) {
-      result = "You Win!";
-      playerScore += 1;
+      // Tie with different variants (e.g., SuperRock vs. Rock)
+      if (card.includes("Super") && !oppChoice.includes("Super")) {
+        result = "You Win! (Super card bonus)";
+        playerScore += 1;
+      } else if (!card.includes("Super") && oppChoice.includes("Super")) {
+        result = "Opponent Wins! (Super card bonus)";
+        oppScore += 1;
+      } else {
+        result = "Tie!";
+      }
     } else {
-      result = "Opponent Wins!";
-      oppScore += 1;
+      // Standard win/lose logic
+      if (
+        (card.includes("Rock") && oppChoice.includes("Scissors")) ||
+        (card.includes("Paper") && oppChoice.includes("Rock")) ||
+        (card.includes("Scissors") && oppChoice.includes("Paper"))
+      ) {
+        result = "You Win!";
+        playerScore += 1;
+      } else {
+        result = "Opponent Wins!";
+        oppScore += 1;
+      }
     }
 
     // Show face-down cards (no played cards update yet)
@@ -160,8 +192,8 @@ export default function RPSGame() {
         showResult: true,
         playerScore,
         oppScore,
-        playerPlayedCards: [...state.playerPlayedCards, card], // Update here
-        oppPlayedCards: [...state.oppPlayedCards, oppChoice], // Update here
+        playerPlayedCards: [...state.playerPlayedCards, card],
+        oppPlayedCards: [...state.oppPlayedCards, oppChoice],
       });
 
       // Reset for next round
@@ -273,7 +305,10 @@ export default function RPSGame() {
               Your Hand ({state.playerHand.length}){" "}
               <span className="text-sm">
                 (Rock x{handCounts.Rock || 0}, Paper x{handCounts.Paper || 0},
-                Scissors x{handCounts.Scissors || 0})
+                Scissors x{handCounts.Scissors || 0}, SuperRock x
+                {handCounts.SuperRock || 0}, SuperPaper x
+                {handCounts.SuperPaper || 0}, SuperScissors x
+                {handCounts.SuperScissors || 0})
               </span>
             </h2>
             <div className="flex gap-2 flex-wrap">
@@ -330,8 +365,15 @@ export default function RPSGame() {
         {/* Played Cards History */}
         <div className="mt-4">
           <h3 className="text-lg font-semibold">Your Played Cards</h3>
-          <div className="flex flex-row gap-2 mt-2">
-            {["Rock", "Paper", "Scissors"].map((type) => (
+          <div className="flex flex-row gap-2 mt-2 flex-wrap">
+            {[
+              "Rock",
+              "Paper",
+              "Scissors",
+              "SuperRock",
+              "SuperPaper",
+              "SuperScissors",
+            ].map((type) => (
               <div
                 key={`player-played-${type}`}
                 className="flex flex-col items-center"
@@ -348,8 +390,15 @@ export default function RPSGame() {
           <h3 className="text-lg font-semibold">
             Opponent&apos;s Played Cards
           </h3>
-          <div className="flex flex-row gap-2 mt-2">
-            {["Rock", "Paper", "Scissors"].map((type) => (
+          <div className="flex flex-row gap-2 mt-2 flex-wrap">
+            {[
+              "Rock",
+              "Paper",
+              "Scissors",
+              "SuperRock",
+              "SuperPaper",
+              "SuperScissors",
+            ].map((type) => (
               <div
                 key={`opp-played-${type}`}
                 className="flex flex-col items-center"

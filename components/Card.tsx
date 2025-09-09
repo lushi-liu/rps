@@ -5,7 +5,13 @@ import { IconType } from "react-icons";
 import { cardIcons } from "../app/vs-bot/page";
 
 // Define card types
-type CardType = "Rock" | "Paper" | "Scissors";
+type CardType =
+  | "Rock"
+  | "Paper"
+  | "Scissors"
+  | "SuperRock"
+  | "SuperPaper"
+  | "SuperScissors";
 
 interface CardProps {
   type: CardType | null; // null for face-down cards
@@ -39,10 +45,13 @@ export const Card: React.FC<CardProps> = ({
   const cursorClass =
     isPlayable && !showResult ? "cursor-pointer" : "cursor-not-allowed";
   const opacityClass = showResult && isPlayable ? "opacity-50" : "";
+  const borderClass = type?.includes("Super")
+    ? "border-red-500 border-6"
+    : "border-gray-300 border-6";
 
   return (
     <motion.div
-      className={`bg-white rounded-lg shadow-lg flex items-center justify-center border-2 border-gray-300 ${sizeClass} ${cursorClass} ${opacityClass}`}
+      className={`bg-white rounded-lg shadow-lg flex items-center justify-center border-2 ${borderClass} ${sizeClass} ${cursorClass} ${opacityClass}`}
       whileHover={isPlayable && !showResult ? { scale: 1.1, rotate: 2 } : {}}
       whileTap={isPlayable && !showResult ? { scale: 0.95 } : {}}
       onClick={isPlayable && !showResult ? onClick : undefined}
