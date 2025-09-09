@@ -14,6 +14,7 @@ interface CardProps {
   showResult?: boolean; // For play area reveal
   onClick?: () => void; // Click handler for player cards
   isInPlayArea?: boolean; // Larger size for play area
+  size?: "small" | "default"; // Size for sidebar (small) or default
 }
 
 export const Card: React.FC<CardProps> = ({
@@ -23,8 +24,18 @@ export const Card: React.FC<CardProps> = ({
   showResult = false,
   onClick,
   isInPlayArea = false,
+  size = "default",
 }) => {
-  const sizeClass = isInPlayArea ? "w-24 h-36" : "w-16 h-24";
+  const sizeClass = isInPlayArea
+    ? "w-24 h-36"
+    : size === "small"
+    ? "w-12 h-16"
+    : "w-16 h-24";
+  const iconSizeClass = isInPlayArea
+    ? "text-6xl"
+    : size === "small"
+    ? "text-3xl"
+    : "text-4xl";
   const cursorClass =
     isPlayable && !showResult ? "cursor-pointer" : "cursor-not-allowed";
   const opacityClass = showResult && isPlayable ? "opacity-50" : "";
@@ -42,12 +53,10 @@ export const Card: React.FC<CardProps> = ({
       {!type ||
       (isInPlayArea && !showResult) ||
       (isOpponent && !isInPlayArea) ? (
-        <FaQuestion
-          className={`text-${isInPlayArea ? "6xl" : "4xl"} text-gray-500`}
-        />
+        <FaQuestion className={`${iconSizeClass} text-gray-500`} />
       ) : (
         React.createElement(cardIcons[type], {
-          className: `text-${isInPlayArea ? "6xl" : "4xl"} text-gray-700`,
+          className: `${iconSizeClass} text-gray-700`,
         })
       )}
     </motion.div>

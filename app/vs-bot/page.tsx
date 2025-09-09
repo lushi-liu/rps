@@ -21,6 +21,8 @@ interface GameState {
   showResult: boolean;
   playerScore: number;
   oppScore: number;
+  playerPlayedCards: CardType[];
+  oppPlayedCards: CardType[];
 }
 
 // Base deck: 4 of each card type
@@ -45,6 +47,7 @@ const drawInitialHand = (deck: CardType[]): [CardType[], CardType[]] => {
   const shuffled = shuffle(deck);
   const hand = shuffled.slice(0, 8);
   const remainingDeck = shuffled.slice(8);
+  console.log("Initial hand:", hand, "Deck:", remainingDeck); // Debug
   return [hand, remainingDeck];
 };
 
@@ -55,9 +58,9 @@ export const cardIcons: Record<CardType, IconType> = {
   Scissors: FaHandScissors,
 };
 
-// Count cards in hand for display
-const getCardCounts = (hand: CardType[]): Record<CardType, number> => {
-  return hand.reduce((counts, card) => {
+// Count cards for display (used for hand and played cards)
+const getCardCounts = (cards: CardType[]): Record<CardType, number> => {
+  return cards.reduce((counts, card) => {
     counts[card] = (counts[card] || 0) + 1;
     return counts;
   }, {} as Record<CardType, number>);
@@ -79,6 +82,8 @@ export default function RPSGame() {
     showResult: false,
     playerScore: 0,
     oppScore: 0,
+    playerPlayedCards: [],
+    oppPlayedCards: [],
   });
 
   const playCard = (card: CardType, index: number) => {
@@ -124,7 +129,7 @@ export default function RPSGame() {
       oppScore += 1;
     }
 
-    // Show face-down cards
+    // Show face-down cards (no played cards update yet)
     setState({
       ...state,
       playerCard: card,
@@ -132,7 +137,7 @@ export default function RPSGame() {
       showResult: false,
     });
 
-    // Reveal cards and result
+    // Reveal cards and result, update played cards
     setTimeout(() => {
       const updatedPlayerHand = playerDraw
         ? [...newPlayerHand, playerDraw]
@@ -155,6 +160,8 @@ export default function RPSGame() {
         showResult: true,
         playerScore,
         oppScore,
+        playerPlayedCards: [...state.playerPlayedCards, card], // Update here
+        oppPlayedCards: [...state.oppPlayedCards, oppChoice], // Update here
       });
 
       // Reset for next round
@@ -184,11 +191,15 @@ export default function RPSGame() {
       showResult: false,
       playerScore: 0,
       oppScore: 0,
+      playerPlayedCards: [],
+      oppPlayedCards: [],
     });
   };
 
-  // Get card counts for display
-  const cardCounts = getCardCounts(state.playerHand);
+  // Get card counts for hand and played cards
+  const handCounts = getCardCounts(state.playerHand);
+  const playerPlayedCounts = getCardCounts(state.playerPlayedCards);
+  const oppPlayedCounts = getCardCounts(state.oppPlayedCards);
 
   return (
     <div className="flex p-4 min-h-screen bg-gradient-to-b from-blue-200 to-gray-300">
@@ -202,7 +213,7 @@ export default function RPSGame() {
           {/* Opponent's Hand (Top) */}
           <div>
             <h2 className="text-xl font-semibold mb-2 text-gray-700">
-              Opponents Hand ({state.oppHand.length})
+              Opponent&apos;s Hand ({state.oppHand.length})
             </h2>
             <div className="flex gap-2 flex-wrap">
               {Array(state.oppHand.length)
@@ -237,7 +248,6 @@ export default function RPSGame() {
                   type={state.oppCard}
                   showResult={state.showResult}
                   isInPlayArea={true}
-                  isOpponent={true}
                 />
               </div>
             </div>
@@ -262,8 +272,8 @@ export default function RPSGame() {
             <h2 className="text-xl font-semibold mb-2 text-gray-700">
               Your Hand ({state.playerHand.length}){" "}
               <span className="text-sm">
-                (Rock x{cardCounts.Rock || 0}, Paper x{cardCounts.Paper || 0},
-                Scissors x{cardCounts.Scissors || 0})
+                (Rock x{handCounts.Rock || 0}, Paper x{handCounts.Paper || 0},
+                Scissors x{handCounts.Scissors || 0})
               </span>
             </h2>
             <div className="flex gap-2 flex-wrap">
@@ -313,9 +323,44 @@ export default function RPSGame() {
         <h2 className="text-xl font-bold">Score</h2>
         <p className="text-lg">You: {state.playerScore}</p>
         <p className="text-lg">Opponent: {state.oppScore}</p>
-        <div className="mt-auto">
+        <div className="mt-4">
           <p className="text-sm">Your Deck: {state.playerDeck.length}</p>
           <p className="text-sm">Opponent Deck: {state.oppDeck.length}</p>
+        </div>
+        {/* Played Cards History */}
+        <div className="mt-4">
+          <h3 className="text-lg font-semibold">Your Played Cards</h3>
+          <div className="flex flex-row gap-2 mt-2">
+            {["Rock", "Paper", "Scissors"].map((type) => (
+              <div
+                key={`player-played-${type}`}
+                className="flex flex-col items-center"
+              >
+                <Card type={type as CardType} size="small" />
+                <span className="text-sm mt-1">
+                  x{playerPlayedCounts[type as CardType] || 0}
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
+        <div className="mt-4">
+          <h3 className="text-lg font-semibold">
+            Opponent&apos;s Played Cards
+          </h3>
+          <div className="flex flex-row gap-2 mt-2">
+            {["Rock", "Paper", "Scissors"].map((type) => (
+              <div
+                key={`opp-played-${type}`}
+                className="flex flex-col items-center"
+              >
+                <Card type={type as CardType} size="small" />
+                <span className="text-sm mt-1">
+                  x{oppPlayedCounts[type as CardType] || 0}
+                </span>
+              </div>
+            ))}
+          </div>
         </div>
       </div>
     </div>
