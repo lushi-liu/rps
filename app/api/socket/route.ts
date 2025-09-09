@@ -1,19 +1,17 @@
 import { Server } from "socket.io";
-import type { NextRequest } from "next/server";
+import type { NextApiResponse } from "next";
 
 let io: Server | null = null;
 
-export async function GET(request: NextRequest) {
-  if (io) {
-    console.log("Socket.IO server already running");
-  } else {
+export async function GET(req: Request, res: NextApiResponse) {
+  if (!io) {
     console.log("Initializing Socket.IO server");
     const { Server: IOServer } = await import("socket.io");
     io = new IOServer({
       path: "/api/socket",
       addTrailingSlash: false,
       cors: {
-        origin: "http://localhost:3000", // Adjust for production
+        origin: "http://localhost:3000",
         methods: ["GET", "POST"],
       },
     });
@@ -21,14 +19,24 @@ export async function GET(request: NextRequest) {
     io.on("connection", (socket) => {
       console.log("Player connected:", socket.id);
 
-      // Handle room joining (for PvP matching)
+      // Handle room joining
       socket.on("join-room", (roomId: string) => {
+        const clientsInRoom = io?.sockets.adapter.rooms.get(roomId)?.size || 0;
+        if (clientsInRoom >= 2) {
+          socket.emit("room-full", {
+            message: "Room is full. Try another room.",
+          });
+          return;
+        }
         socket.join(roomId);
-        socket.to(roomId).emit("player-joined", { playerId: socket.id });
         console.log(`Player ${socket.id} joined room ${roomId}`);
+        io?.to(roomId).emit("player-joined", {
+          playerId: socket.id,
+          players: clientsInRoom + 1,
+        });
       });
 
-      // Handle card play (PvP move)
+      // Handle card play
       socket.on(
         "play-card",
         ({
@@ -44,18 +52,14 @@ export async function GET(request: NextRequest) {
         }
       );
 
-      // Handle result reveal (sync after both play)
-      socket.on(
-        "reveal-result",
-        ({ roomId, result }: { roomId: string; result: string }) => {
-          socket.to(roomId).emit("result-revealed", { result });
-        }
-      );
-
+      // Handle disconnect
       socket.on("disconnect", () => {
         console.log("Player disconnected:", socket.id);
+        socket.broadcast.emit("opponent-disconnected", { playerId: socket.id });
       });
     });
+  } else {
+    console.log("Socket.IO server already running");
   }
 
   return new Response("Socket.IO server initialized", { status: 200 });
