@@ -32,7 +32,7 @@ const baseDeck: CardType[] = [
   ...Array(10).fill("Scissors" as CardType),
 ];
 
-//shuffle
+// Shuffle array (Fisher-Yates)
 const shuffle = <T,>(array: T[]): T[] => {
   const shuffled = [...array];
   for (let i = shuffled.length - 1; i > 0; i--) {
@@ -42,10 +42,13 @@ const shuffle = <T,>(array: T[]): T[] => {
   return shuffled;
 };
 
-// Initialize hand with 8 random cards
+// Initialize hand with exactly 22 cards
 const drawInitialHand = (deck: CardType[]): [CardType[], CardType[]] => {
   const shuffled = shuffle(deck);
-  return [shuffled.slice(0, 23), shuffled.slice(23)];
+  const hand = shuffled.slice(0, 22);
+  const remainingDeck = shuffled.slice(22);
+  console.log("Initial hand:", hand, "Deck:", remainingDeck); // Debug
+  return [hand, remainingDeck];
 };
 
 // Map card types to icons
@@ -92,12 +95,19 @@ export default function RPSGame() {
       (c, i) => c !== oppChoice || i !== state.oppHand.indexOf(oppChoice)
     );
 
-    // Draw new cards if deck isn't empty
+    // Draw one card if hand is below 22 and deck isn't empty
     const newPlayerDeck = [...state.playerDeck];
     const newOppDeck = [...state.oppDeck];
-    const playerDraw = newPlayerDeck.length > 0 ? newPlayerDeck.shift() : null;
-    const oppDraw = newOppDeck.length > 0 ? newOppDeck.shift() : null;
+    const playerDraw =
+      newPlayerHand.length < 22 && newPlayerDeck.length > 0
+        ? newPlayerDeck.shift()
+        : null;
+    const oppDraw =
+      newOppHand.length < 22 && newOppDeck.length > 0
+        ? newOppDeck.shift()
+        : null;
 
+    // Determine result
     let result = "";
     if (card === oppChoice) {
       result = "Tie!";
@@ -111,6 +121,7 @@ export default function RPSGame() {
       result = "Opponent Wins!";
     }
 
+    // Show face-down cards
     setState({
       ...state,
       playerCard: card,
@@ -118,11 +129,22 @@ export default function RPSGame() {
       showResult: false,
     });
 
+    // Reveal result and reset for next round
     setTimeout(() => {
+      const updatedPlayerHand = playerDraw
+        ? [...newPlayerHand, playerDraw]
+        : newPlayerHand;
+      const updatedOppHand = oppDraw ? [...newOppHand, oppDraw] : newOppHand;
+      console.log(
+        "After round - Player hand:",
+        updatedPlayerHand,
+        "Opponent hand:",
+        updatedOppHand
+      ); // Debug
       setState({
-        playerHand: playerDraw ? [...newPlayerHand, playerDraw] : newPlayerHand,
+        playerHand: updatedPlayerHand,
         playerDeck: newPlayerDeck,
-        oppHand: oppDraw ? [...newOppHand, oppDraw] : newOppHand,
+        oppHand: updatedOppHand,
         oppDeck: newOppDeck,
         playerCard: null,
         oppCard: null,
@@ -161,9 +183,88 @@ export default function RPSGame() {
         Vs Bot: Rock-Paper-Scissors
       </h1>
       {/* Game Board */}
-      <div className="w-full max-w-4xl bg-gray-100 rounded-lg shadow-lg p-6">
-        {/* Player Hand */}
-        <div className="mb-8">
+      <div className="w-full max-w-4xl bg-gray-100 rounded-lg shadow-lg p-6 flex flex-col gap-6">
+        {/* Opponent's Hand (Top) */}
+        <div>
+          <h2 className="text-xl font-semibold mb-2 text-gray-700">
+            Opponents Hand ({state.oppHand.length})
+          </h2>
+          <div className="flex gap-2 flex-wrap">
+            {Array(state.oppHand.length)
+              .fill(null)
+              .map((_, index) => (
+                <motion.div
+                  key={`opp-card-${index}`}
+                  className="w-16 h-24 bg-white rounded-lg shadow-lg flex items-center justify-center border-2 border-gray-300"
+                >
+                  <FaQuestion className="text-4xl text-gray-500" />
+                </motion.div>
+              ))}
+          </div>
+        </div>
+
+        {/* Play Area (Middle) */}
+        <div className="flex flex-col items-center">
+          <AnimatePresence>
+            {(state.playerCard || state.oppCard) && (
+              <motion.div
+                className="flex justify-center gap-12 mb-4"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+              >
+                <div className="text-center">
+                  <p className="text-lg font-semibold text-gray-700">You</p>
+                  <motion.div
+                    className="w-24 h-36 bg-white rounded-lg shadow-lg flex items-center justify-center border-2 border-gray-300"
+                    initial={{ rotateY: 0 }}
+                    animate={{ rotateY: state.showResult ? 360 : 0 }}
+                    transition={{ duration: 0.5 }}
+                  >
+                    {state.playerCard && state.showResult ? (
+                      React.createElement(cardIcons[state.playerCard], {
+                        className: "text-6xl text-gray-700",
+                      })
+                    ) : (
+                      <FaQuestion className="text-6xl text-gray-500" />
+                    )}
+                  </motion.div>
+                </div>
+                <div className="text-center">
+                  <p className="text-lg font-semibold text-gray-700">
+                    Opponent
+                  </p>
+                  <motion.div
+                    className="w-24 h-36 bg-white rounded-lg shadow-lg flex items-center justify-center border-2 border-gray-300"
+                    initial={{ rotateY: 0 }}
+                    animate={{ rotateY: state.showResult ? 360 : 0 }}
+                    transition={{ duration: 0.5 }}
+                  >
+                    {state.oppCard && state.showResult ? (
+                      React.createElement(cardIcons[state.oppCard], {
+                        className: "text-6xl text-gray-700",
+                      })
+                    ) : (
+                      <FaQuestion className="text-6xl text-gray-500" />
+                    )}
+                  </motion.div>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+          {state.showResult && state.result && (
+            <motion.p
+              className="text-2xl font-bold text-gray-800 text-center"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+            >
+              {state.result}
+            </motion.p>
+          )}
+        </div>
+
+        {/* Player's Hand (Bottom) */}
+        <div>
           <h2 className="text-xl font-semibold mb-2 text-gray-700">
             Your Hand ({state.playerHand.length}){" "}
             <span className="text-sm">
@@ -171,11 +272,11 @@ export default function RPSGame() {
               Scissors x{cardCounts.Scissors || 0})
             </span>
           </h2>
-          <div className="flex gap-4 flex-wrap">
+          <div className="flex gap-2 flex-wrap">
             {state.playerHand.map((card, index) => (
               <motion.div
                 key={`${card}-${index}`} // Unique key for duplicates
-                className={`w-24 h-36 bg-white rounded-lg shadow-lg flex items-center justify-center border-2 border-gray-300 ${
+                className={`w-16 h-24 bg-white rounded-lg shadow-lg flex items-center justify-center border-2 border-gray-300 ${
                   state.showResult
                     ? "opacity-50 cursor-not-allowed"
                     : "cursor-pointer"
@@ -185,70 +286,15 @@ export default function RPSGame() {
                 onClick={() => !state.showResult && playCard(card, index)}
               >
                 {React.createElement(cardIcons[card], {
-                  className: "text-6xl text-gray-700",
+                  className: "text-4xl text-gray-700",
                 })}
               </motion.div>
             ))}
           </div>
         </div>
-        {/* Play Area */}
-        <AnimatePresence>
-          {(state.playerCard || state.oppCard) && (
-            <motion.div
-              className="flex justify-center gap-12 mb-8"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-            >
-              <div className="text-center">
-                <p className="text-lg font-semibold text-gray-700">You</p>
-                <motion.div
-                  className="w-24 h-36 bg-white rounded-lg shadow-lg flex items-center justify-center border-2 border-gray-300"
-                  initial={{ rotateY: 0 }}
-                  animate={{ rotateY: state.showResult ? 360 : 0 }}
-                  transition={{ duration: 0.5 }}
-                >
-                  {state.playerCard && state.showResult ? (
-                    React.createElement(cardIcons[state.playerCard], {
-                      className: "text-6xl text-gray-700",
-                    })
-                  ) : (
-                    <FaQuestion className="text-6xl text-gray-500" />
-                  )}
-                </motion.div>
-              </div>
-              <div className="text-center">
-                <p className="text-lg font-semibold text-gray-700">Opponent</p>
-                <motion.div
-                  className="w-24 h-36 bg-white rounded-lg shadow-lg flex items-center justify-center border-2 border-gray-300"
-                  initial={{ rotateY: 0 }}
-                  animate={{ rotateY: state.showResult ? 360 : 0 }}
-                  transition={{ duration: 0.5 }}
-                >
-                  {state.oppCard && state.showResult ? (
-                    React.createElement(cardIcons[state.oppCard], {
-                      className: "text-6xl text-gray-700",
-                    })
-                  ) : (
-                    <FaQuestion className="text-6xl text-gray-500" />
-                  )}
-                </motion.div>
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
-        {/* Result */}
-        {state.showResult && state.result && (
-          <motion.p
-            className="text-2xl font-bold text-gray-800 text-center mb-4"
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-          >
-            {state.result}
-          </motion.p>
-        )}
+
         {/* Game Status */}
-        <div className="flex justify-between text-lg text-gray-700">
+        <div className="flex justify-between text-lg text-gray-700 mt-4">
           <p>
             Your Deck: {state.playerDeck.length} | Hand:{" "}
             {state.playerHand.length}
@@ -258,6 +304,7 @@ export default function RPSGame() {
           </p>
         </div>
       </div>
+
       {/* Game Over */}
       {(state.playerHand.length === 0 && state.playerDeck.length === 0) ||
       (state.oppHand.length === 0 && state.oppDeck.length === 0) ? (
