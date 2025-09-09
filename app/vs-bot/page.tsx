@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { FaHandRock, FaHandPaper, FaHandScissors } from "react-icons/fa";
 import { IconType } from "react-icons";
 import { Card } from "../../components/Card";
+import Link from "next/link";
 
 // Define card types
 type CardType =
@@ -237,9 +238,16 @@ export default function RPSGame() {
     <div className="flex p-4 min-h-screen bg-gradient-to-b from-blue-200 to-gray-300">
       {/* Main Game Area */}
       <div className="flex flex-col flex-1 max-w-4xl">
-        <h1 className="text-3xl font-bold mb-6 text-gray-800 text-center">
+        <h1 className="text-3xl font-bold mb-4 text-gray-800 text-center">
           Vs Bot: Rock-Paper-Scissors
         </h1>
+        <div className="text-center mb-4">
+          <Link href="/">
+            <button className="px-6 py-2 bg-green-500 text-white rounded-lg shadow hover:bg-green-600">
+              Back to Homepage
+            </button>
+          </Link>
+        </div>
         {/* Game Board */}
         <div className="bg-gray-100 rounded-lg shadow-lg p-6 flex flex-col gap-6">
           {/* Opponent's Hand (Top) */}

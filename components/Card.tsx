@@ -45,13 +45,13 @@ export const Card: React.FC<CardProps> = ({
   const cursorClass =
     isPlayable && !showResult ? "cursor-pointer" : "cursor-not-allowed";
   const opacityClass = showResult && isPlayable ? "opacity-50" : "";
-  const borderClass = type?.includes("Super")
-    ? "border-red-500 border-6"
-    : "border-gray-300 border-6";
+  const iconColorClass = type?.includes("Super")
+    ? "text-yellow-500"
+    : "text-gray-700";
 
   return (
     <motion.div
-      className={`bg-white rounded-lg shadow-lg flex items-center justify-center border-2 ${borderClass} ${sizeClass} ${cursorClass} ${opacityClass}`}
+      className={`bg-white rounded-lg shadow-lg flex items-center justify-center border-2 border-gray-300 ${sizeClass} ${cursorClass} ${opacityClass}`}
       whileHover={isPlayable && !showResult ? { scale: 1.1, rotate: 2 } : {}}
       whileTap={isPlayable && !showResult ? { scale: 0.95 } : {}}
       onClick={isPlayable && !showResult ? onClick : undefined}
@@ -65,7 +65,7 @@ export const Card: React.FC<CardProps> = ({
         <FaQuestion className={`${iconSizeClass} text-gray-500`} />
       ) : (
         React.createElement(cardIcons[type], {
-          className: `${iconSizeClass} text-gray-700`,
+          className: `${iconSizeClass} ${iconColorClass}`,
         })
       )}
     </motion.div>
