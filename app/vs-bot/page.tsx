@@ -128,7 +128,7 @@ const botPlay = (botHand: CardType[]): [CardType, number] => {
 function RPSBotGame() {
   const searchParams = useSearchParams();
 
-  // Load settings from query params or local storage, no default deck fallback
+  // Load settings from query params or local storage, respecting explicit zeros
   const getSettingsValue = (
     key: string,
     localKey: string,
@@ -136,21 +136,41 @@ function RPSBotGame() {
   ): number | boolean => {
     const queryValue = searchParams.get(key);
     if (queryValue !== null) {
+      console.log(`Query param ${key}: ${queryValue}`);
       return key === "openHand"
         ? queryValue === "true"
         : parseInt(queryValue) || 0;
     }
-    const savedSettings = localStorage.getItem("gameSettings");
-    if (savedSettings) {
-      const parsed = JSON.parse(savedSettings);
-      if (key === "openHand") {
-        return parsed.openHand ?? defaultValue;
+    const savedSettingsRaw = localStorage.getItem("gameSettings");
+    console.log(`Raw localStorage gameSettings: ${savedSettingsRaw}`);
+    if (savedSettingsRaw) {
+      try {
+        const parsed = JSON.parse(savedSettingsRaw) as Partial<GameSettings>;
+        console.log(`Parsed localStorage:`, parsed);
+        if (key === "openHand") {
+          return parsed.openHand !== undefined ? parsed.openHand : defaultValue;
+        }
+        if (key === "handSize") {
+          return parsed.handSize !== undefined
+            ? Math.max(1, parsed.handSize)
+            : defaultValue;
+        }
+        if (
+          parsed.deck &&
+          parsed.deck[localKey as keyof GameSettings["deck"]] !== undefined
+        ) {
+          return Math.max(
+            0,
+            parsed.deck[localKey as keyof GameSettings["deck"]]
+          );
+        }
+        return 0; // Explicitly return 0 if deck key is missing in localStorage
+      } catch (e) {
+        console.error("Failed to parse localStorage gameSettings:", e);
+        return defaultValue;
       }
-      if (key === "handSize") {
-        return parsed.handSize ? Math.max(1, parsed.handSize) : defaultValue;
-      }
-      return parsed.deck?.[localKey] ?? 0;
     }
+    console.log(`Using default for ${key}: ${defaultValue}`);
     return defaultValue;
   };
 
@@ -278,7 +298,7 @@ function RPSBotGame() {
         : state.playerHand.filter((_, i) => i !== index);
       const updatedBotHand = botDraw
         ? [...state.botHand.filter((_, i) => i !== botIndex), botDraw]
-        : state.botHand.filter((_, i) => i !== index);
+        : state.botHand.filter((_, i) => i !== botIndex);
       setState((prev) => ({
         ...prev,
         playerHand: updatedPlayerHand,
@@ -536,6 +556,7 @@ function RPSBotGame() {
   );
 }
 
+// Page component with Suspense boundary
 export default function VsBotPage() {
   return (
     <Suspense

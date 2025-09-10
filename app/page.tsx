@@ -36,19 +36,24 @@ export default function Home() {
   useEffect(() => {
     const savedSettings = localStorage.getItem("gameSettings");
     if (savedSettings) {
-      const parsed = JSON.parse(savedSettings);
-      setSettings({
-        handSize: Math.max(1, parsed.handSize || 8),
-        deck: {
-          regularRock: Math.max(0, parsed.deck?.regularRock || 4),
-          regularPaper: Math.max(0, parsed.deck?.regularPaper || 4),
-          regularScissors: Math.max(0, parsed.deck?.regularScissors || 4),
-          superRock: Math.max(0, parsed.deck?.superRock || 2),
-          superPaper: Math.max(0, parsed.deck?.superPaper || 2),
-          superScissors: Math.max(0, parsed.deck?.superScissors || 2),
-        },
-        openHand: parsed.openHand || false,
-      });
+      try {
+        const parsed = JSON.parse(savedSettings);
+        setSettings({
+          handSize: Math.max(1, parsed.handSize || 8),
+          deck: {
+            regularRock: Math.max(0, parsed.deck?.regularRock ?? 0),
+            regularPaper: Math.max(0, parsed.deck?.regularPaper ?? 0),
+            regularScissors: Math.max(0, parsed.deck?.regularScissors ?? 0),
+            superRock: Math.max(0, parsed.deck?.superRock ?? 0),
+            superPaper: Math.max(0, parsed.deck?.superPaper ?? 0),
+            superScissors: Math.max(0, parsed.deck?.superScissors ?? 0),
+          },
+          openHand: parsed.openHand ?? false,
+        });
+        console.log("Loaded from localStorage:", parsed);
+      } catch (e) {
+        console.error("Failed to parse localStorage gameSettings:", e);
+      }
     }
   }, []);
 
@@ -87,6 +92,7 @@ export default function Home() {
       return;
     }
     localStorage.setItem("gameSettings", JSON.stringify(settings));
+    console.log("Saved to localStorage:", settings);
     setIsSettingsOpen(false);
   };
 
