@@ -14,13 +14,13 @@ type CardType =
   | "SuperScissors";
 
 interface CardProps {
-  type: CardType | null; // null for face-down cards
-  isPlayable?: boolean; // Whether card can be clicked (player hand)
-  isOpponent?: boolean; // Opponent cards are face-down unless in play area with showResult
-  showResult?: boolean; // For play area reveal
-  onClick?: () => void; // Click handler for player cards
-  isInPlayArea?: boolean; // Larger size for play area
-  size?: "small" | "default"; // Size for sidebar (small) or default
+  type: CardType | null;
+  isPlayable?: boolean;
+  isOpponent?: boolean;
+  showResult?: boolean;
+  onClick?: () => void;
+  isInPlayArea?: boolean;
+  size?: "small" | "default";
 }
 
 export const Card: React.FC<CardProps> = ({
@@ -32,6 +32,10 @@ export const Card: React.FC<CardProps> = ({
   isInPlayArea = false,
   size = "default",
 }) => {
+  console.log(
+    `Rendering Card: type=${type}, isOpponent=${isOpponent}, isPlayable=${isPlayable}, showResult=${showResult}, isInPlayArea=${isInPlayArea}, size=${size}`
+  );
+
   const sizeClass = isInPlayArea
     ? "w-24 h-36"
     : size === "small"
@@ -49,6 +53,9 @@ export const Card: React.FC<CardProps> = ({
     ? "text-yellow-500"
     : "text-gray-700";
 
+  // Show placeholder only if type is null (for opponent when openHand=false) or in play area before reveal
+  const showPlaceholder = !type || (isInPlayArea && !showResult);
+
   return (
     <motion.div
       className={`bg-white rounded-lg shadow-lg flex items-center justify-center border-2 border-gray-300 ${sizeClass} ${cursorClass} ${opacityClass}`}
@@ -59,12 +66,10 @@ export const Card: React.FC<CardProps> = ({
       animate={{ rotateY: showResult && type && isInPlayArea ? 360 : 0 }}
       transition={{ duration: 0.5 }}
     >
-      {!type ||
-      (isInPlayArea && !showResult) ||
-      (isOpponent && !isInPlayArea) ? (
+      {showPlaceholder ? (
         <FaQuestion className={`${iconSizeClass} text-gray-500`} />
       ) : (
-        React.createElement(cardIcons[type], {
+        React.createElement(cardIcons[type as CardType], {
           className: `${iconSizeClass} ${iconColorClass}`,
         })
       )}

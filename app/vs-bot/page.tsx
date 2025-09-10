@@ -137,9 +137,10 @@ function RPSBotGame() {
     const queryValue = searchParams.get(key);
     if (queryValue !== null) {
       console.log(`Query param ${key}: ${queryValue}`);
-      return key === "openHand"
-        ? queryValue === "true"
-        : parseInt(queryValue) || 0;
+      const value =
+        key === "openHand" ? queryValue === "true" : parseInt(queryValue) || 0;
+      console.log(`Parsed ${key}: ${value}`);
+      return value;
     }
     const savedSettingsRaw = localStorage.getItem("gameSettings");
     console.log(`Raw localStorage gameSettings: ${savedSettingsRaw}`);
@@ -148,7 +149,10 @@ function RPSBotGame() {
         const parsed = JSON.parse(savedSettingsRaw) as Partial<GameSettings>;
         console.log(`Parsed localStorage:`, parsed);
         if (key === "openHand") {
-          return parsed.openHand !== undefined ? parsed.openHand : defaultValue;
+          const openHandValue =
+            parsed.openHand !== undefined ? parsed.openHand : defaultValue;
+          console.log(`OpenHand value from localStorage: ${openHandValue}`);
+          return openHandValue;
         }
         if (key === "handSize") {
           return parsed.handSize !== undefined
@@ -393,6 +397,7 @@ function RPSBotGame() {
                       key={`bot-card-${index}`}
                       type={settings.openHand ? card : null}
                       isOpponent={true}
+                      showResult={false}
                     />
                   ))}
                 </div>
@@ -400,9 +405,6 @@ function RPSBotGame() {
 
               {/* Play Area */}
               <div className="flex flex-col items-center">
-                <h2 className="text-xl font-semibold mb-2 text-gray-700">
-                  Play Area
-                </h2>
                 <div className="flex justify-center gap-12 mb-4">
                   <div className="text-center">
                     <p className="text-lg font-semibold text-gray-700">You</p>
