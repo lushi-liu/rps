@@ -7,6 +7,9 @@ export async function GET(
   req: NextRequest,
   { params }: { params: Promise<Record<string, never>> }
 ) {
+  // Ensure params is resolved (though empty for this route)
+  await params;
+
   if (!io) {
     console.log("Initializing Socket.IO server");
     const { Server: IOServer } = await import("socket.io");
@@ -24,15 +27,23 @@ export async function GET(
 
       // Handle room joining
       socket.on("join-room", (roomId: string) => {
+        console.log(
+          `Received join-room for roomId: ${roomId}, player: ${socket.id}`
+        );
         const clientsInRoom = io?.sockets.adapter.rooms.get(roomId)?.size || 0;
         if (clientsInRoom >= 2) {
+          console.log(`Room ${roomId} is full`);
           socket.emit("room-full", {
             message: "Room is full. Try another room.",
           });
           return;
         }
         socket.join(roomId);
-        console.log(`Player ${socket.id} joined room ${roomId}`);
+        console.log(
+          `Player ${socket.id} joined room ${roomId}, players in room: ${
+            clientsInRoom + 1
+          }`
+        );
         io?.to(roomId).emit("player-joined", {
           playerId: socket.id,
           players: clientsInRoom + 1,
@@ -51,6 +62,9 @@ export async function GET(
           card: string;
           index: number;
         }) => {
+          console.log(
+            `Player ${socket.id} played card ${card} in room ${roomId}`
+          );
           socket.to(roomId).emit("opponent-play", { card, index });
         }
       );

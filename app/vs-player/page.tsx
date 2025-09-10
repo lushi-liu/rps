@@ -108,14 +108,25 @@ export default function RPSPvPGame() {
   const [error, setError] = useState("");
 
   useEffect(() => {
-    const socketInstance = io({ path: "/api/socket" });
+    console.log("Initializing Socket.IO client");
+    const socketInstance = io("http://localhost:3000", {
+      path: "/api/socket",
+      transports: ["websocket"],
+    });
     setSocket(socketInstance);
 
     socketInstance.on("connect", () => {
       console.log("Connected to server:", socketInstance.id);
+      setError("");
+    });
+
+    socketInstance.on("connect_error", (err) => {
+      console.error("Socket.IO connection error:", err.message);
+      setError(`Failed to connect to server: ${err.message}`);
     });
 
     socketInstance.on("player-joined", ({ players }: { players: number }) => {
+      console.log(`Player-joined event received, players in room: ${players}`);
       setState((prev) => ({
         ...prev,
         opponentConnected: players === 2,
@@ -125,6 +136,7 @@ export default function RPSPvPGame() {
     });
 
     socketInstance.on("room-full", ({ message }: { message: string }) => {
+      console.log("Room full:", message);
       setError(message);
       setState((prev) => ({ ...prev, roomId: null, gameStarted: false }));
     });
@@ -132,6 +144,7 @@ export default function RPSPvPGame() {
     socketInstance.on(
       "opponent-play",
       ({ card, index }: { card: CardType; index: number }) => {
+        console.log(`Opponent played card: ${card} at index: ${index}`);
         setState((prev) => ({
           ...prev,
           oppCard: card,
@@ -139,12 +152,16 @@ export default function RPSPvPGame() {
         }));
         // Trigger reveal if both players have played
         if (state.playerCard) {
+          console.log(
+            `Both players played, revealing: player=${state.playerCard}, opponent=${card}`
+          );
           revealResult(state.playerCard, card);
         }
       }
     );
 
     socketInstance.on("opponent-disconnected", () => {
+      console.log("Opponent disconnected");
       setError("Opponent disconnected. Please restart or join another room.");
       setState((prev) => ({
         ...prev,
@@ -154,6 +171,7 @@ export default function RPSPvPGame() {
     });
 
     return () => {
+      console.log("Disconnecting Socket.IO client");
       socketInstance.disconnect();
     };
   }, [state.playerCard]); // Re-run when playerCard changes to check for reveal
@@ -161,8 +179,15 @@ export default function RPSPvPGame() {
   const joinRoom = () => {
     if (!roomInput.trim()) {
       setError("Please enter a room ID.");
+      console.log("Join room failed: Empty room ID");
       return;
     }
+    if (!socket?.connected) {
+      setError("Not connected to server. Please try again.");
+      console.log("Join room failed: Socket not connected");
+      return;
+    }
+    console.log(`Joining room: ${roomInput}`);
     setError("");
     setState((prev) => ({ ...prev, roomId: roomInput }));
     socket?.emit("join-room", roomInput);
@@ -173,8 +198,18 @@ export default function RPSPvPGame() {
       !state.playerHand.includes(card) ||
       state.showResult ||
       !state.gameStarted
-    )
+    ) {
+      console.log("Play card blocked:", {
+        card,
+        index,
+        showResult: state.showResult,
+        gameStarted: state.gameStarted,
+      });
       return;
+    }
+    console.log(
+      `Player playing card: ${card} at index: ${index} in room: ${state.roomId}`
+    );
     socket?.emit("play-card", { roomId: state.roomId, card, index });
     setState((prev) => ({
       ...prev,
@@ -232,6 +267,9 @@ export default function RPSPvPGame() {
       }
     }
 
+    console.log(
+      `Revealing result: ${result}, scores: player=${playerScore}, opponent=${oppScore}`
+    );
     setTimeout(() => {
       const updatedPlayerHand = playerDraw
         ? [...state.playerHand, playerDraw]
@@ -261,11 +299,13 @@ export default function RPSPvPGame() {
           result: "",
           showResult: false,
         }));
+        console.log("Resetting play area for next round");
       }, 1500);
     }, 1000);
   };
 
   const restartGame = () => {
+    console.log("Restarting game");
     const [newPlayerHand, newPlayerDeck] = drawInitialHand(baseDeck);
     const [newOppHand, newOppDeck] = drawInitialHand(baseDeck);
     setState({
