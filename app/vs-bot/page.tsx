@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { FaHandRock, FaHandPaper, FaHandScissors } from "react-icons/fa";
 import { IconType } from "react-icons";
@@ -20,16 +20,16 @@ type CardType =
 interface GameState {
   playerHand: CardType[];
   playerDeck: CardType[];
-  oppHand: CardType[];
-  oppDeck: CardType[];
+  botHand: CardType[];
+  botDeck: CardType[];
   playerCard: CardType | null;
-  oppCard: CardType | null;
+  botCard: CardType | null;
   result: string;
   showResult: boolean;
   playerScore: number;
-  oppScore: number;
+  botScore: number;
   playerPlayedCards: CardType[];
-  oppPlayedCards: CardType[];
+  botPlayedCards: CardType[];
 }
 
 // Base deck: 4 of each regular, 2 of each super
@@ -61,7 +61,7 @@ const drawInitialHand = (deck: CardType[]): [CardType[], CardType[]] => {
   return [hand, remainingDeck];
 };
 
-// Map card types to icons (exported for Card component)
+// Map card types to icons
 export const cardIcons: Record<CardType, IconType> = {
   Rock: FaHandRock,
   Paper: FaHandPaper,
@@ -71,7 +71,7 @@ export const cardIcons: Record<CardType, IconType> = {
   SuperScissors: FaHandScissors,
 };
 
-// Count cards for display (used for hand and played cards)
+// Count cards for display
 const getCardCounts = (cards: CardType[]): Record<CardType, number> => {
   return cards.reduce((counts, card) => {
     counts[card] = (counts[card] || 0) + 1;
@@ -79,160 +79,147 @@ const getCardCounts = (cards: CardType[]): Record<CardType, number> => {
   }, {} as Record<CardType, number>);
 };
 
-export default function RPSGame() {
-  // Initialize decks and hands
-  const [playerHand, playerDeck] = drawInitialHand(baseDeck);
-  const [oppHand, oppDeck] = drawInitialHand(baseDeck);
+// Bot play logic
+const botPlay = (botHand: CardType[]): [CardType, number] => {
+  const index = Math.floor(Math.random() * botHand.length);
+  return [botHand[index], index];
+};
 
+export default function RPSBotGame() {
+  const [playerHand, playerDeck] = drawInitialHand(baseDeck);
+  const [botHand, botDeck] = drawInitialHand(baseDeck);
   const [state, setState] = useState<GameState>({
     playerHand,
     playerDeck,
-    oppHand,
-    oppDeck,
+    botHand,
+    botDeck,
     playerCard: null,
-    oppCard: null,
+    botCard: null,
     result: "",
     showResult: false,
     playerScore: 0,
-    oppScore: 0,
+    botScore: 0,
     playerPlayedCards: [],
-    oppPlayedCards: [],
+    botPlayedCards: [],
   });
 
   const playCard = (card: CardType, index: number) => {
-    if (!state.playerHand.includes(card) || state.showResult) return;
+    if (!state.playerHand.includes(card) || state.showResult) {
+      console.log("Play blocked:", {
+        card,
+        index,
+        showResult: state.showResult,
+      });
+      return;
+    }
 
-    // Opponent picks random card from hand
-    const oppChoice =
-      state.oppHand[Math.floor(Math.random() * state.oppHand.length)];
+    const [botCard, botIndex] = botPlay(state.botHand);
+    console.log(`Player played: ${card}, Bot played: ${botCard}`);
 
-    // Remove played cards
-    const newPlayerHand = state.playerHand.filter((c, i) => i !== index);
-    const newOppHand = state.oppHand.filter(
-      (c, i) => c !== oppChoice || i !== state.oppHand.indexOf(oppChoice)
-    );
-
-    // Draw one card if hand is below 8 and deck isn't empty
     const newPlayerDeck = [...state.playerDeck];
-    const newOppDeck = [...state.oppDeck];
+    const newBotDeck = [...state.botDeck];
     const playerDraw =
-      newPlayerHand.length < 8 && newPlayerDeck.length > 0
+      state.playerHand.length <= 8 && newPlayerDeck.length > 0
         ? newPlayerDeck.shift()
         : null;
-    const oppDraw =
-      newOppHand.length < 8 && newOppDeck.length > 0
-        ? newOppDeck.shift()
+    const botDraw =
+      state.botHand.length <= 8 && newBotDeck.length > 0
+        ? newBotDeck.shift()
         : null;
 
-    // Determine result and update scores
     let result = "";
     let playerScore = state.playerScore;
-    let oppScore = state.oppScore;
+    let botScore = state.botScore;
 
-    // Check for tie
-    if (card === oppChoice) {
+    if (card === botCard) {
       result = "Tie!";
     } else if (
-      (card.includes("Rock") && oppChoice.includes("Rock")) ||
-      (card.includes("Paper") && oppChoice.includes("Paper")) ||
-      (card.includes("Scissors") && oppChoice.includes("Scissors"))
+      (card.includes("Rock") && botCard.includes("Rock")) ||
+      (card.includes("Paper") && botCard.includes("Paper")) ||
+      (card.includes("Scissors") && botCard.includes("Scissors"))
     ) {
-      // Tie with different variants (e.g., SuperRock vs. Rock)
-      if (card.includes("Super") && !oppChoice.includes("Super")) {
+      if (card.includes("Super") && !botCard.includes("Super")) {
         result = "You Win! (Super card bonus)";
         playerScore += 1;
-      } else if (!card.includes("Super") && oppChoice.includes("Super")) {
+      } else if (!card.includes("Super") && botCard.includes("Super")) {
         result = "Opponent Wins! (Super card bonus)";
-        oppScore += 1;
+        botScore += 1;
       } else {
         result = "Tie!";
       }
     } else {
-      // Standard win/lose logic
       if (
-        (card.includes("Rock") && oppChoice.includes("Scissors")) ||
-        (card.includes("Paper") && oppChoice.includes("Rock")) ||
-        (card.includes("Scissors") && oppChoice.includes("Paper"))
+        (card.includes("Rock") && botCard.includes("Scissors")) ||
+        (card.includes("Paper") && botCard.includes("Rock")) ||
+        (card.includes("Scissors") && botCard.includes("Paper"))
       ) {
         result = "You Win!";
         playerScore += 1;
       } else {
         result = "Opponent Wins!";
-        oppScore += 1;
+        botScore += 1;
       }
     }
 
-    // Show face-down cards (no played cards update yet)
-    setState({
-      ...state,
-      playerCard: card,
-      oppCard: oppChoice,
-      showResult: false,
-    });
-
-    // Reveal cards and result, update played cards
     setTimeout(() => {
       const updatedPlayerHand = playerDraw
-        ? [...newPlayerHand, playerDraw]
-        : newPlayerHand;
-      const updatedOppHand = oppDraw ? [...newOppHand, oppDraw] : newOppHand;
-      console.log(
-        "After round - Player hand:",
-        updatedPlayerHand,
-        "Opponent hand:",
-        updatedOppHand
-      ); // Debug
-      setState({
+        ? [...state.playerHand.filter((_, i) => i !== index), playerDraw]
+        : state.playerHand.filter((_, i) => i !== index);
+      const updatedBotHand = botDraw
+        ? [...state.botHand.filter((_, i) => i !== botIndex), botDraw]
+        : state.botHand.filter((_, i) => i !== botIndex);
+      setState((prev) => ({
+        ...prev,
         playerHand: updatedPlayerHand,
         playerDeck: newPlayerDeck,
-        oppHand: updatedOppHand,
-        oppDeck: newOppDeck,
+        botHand: updatedBotHand,
+        botDeck: newBotDeck,
         playerCard: card,
-        oppCard: oppChoice,
+        botCard,
         result,
         showResult: true,
         playerScore,
-        oppScore,
-        playerPlayedCards: [...state.playerPlayedCards, card],
-        oppPlayedCards: [...state.oppPlayedCards, oppChoice],
-      });
+        botScore,
+        playerPlayedCards: [...prev.playerPlayedCards, card],
+        botPlayedCards: [...prev.botPlayedCards, botCard],
+      }));
 
-      // Reset for next round
       setTimeout(() => {
         setState((prev) => ({
           ...prev,
           playerCard: null,
-          oppCard: null,
+          botCard: null,
           result: "",
           showResult: false,
         }));
-      }, 1500); // Extended delay to show result
-    }, 1000); // 1-second delay for reveal
+        console.log("Resetting play area for next round");
+      }, 1500);
+    }, 1000);
   };
 
   const restartGame = () => {
     const [newPlayerHand, newPlayerDeck] = drawInitialHand(baseDeck);
-    const [newOppHand, newOppDeck] = drawInitialHand(baseDeck);
+    const [newBotHand, newBotDeck] = drawInitialHand(baseDeck);
     setState({
       playerHand: newPlayerHand,
       playerDeck: newPlayerDeck,
-      oppHand: newOppHand,
-      oppDeck: newOppDeck,
+      botHand: newBotHand,
+      botDeck: newBotDeck,
       playerCard: null,
-      oppCard: null,
+      botCard: null,
       result: "",
       showResult: false,
       playerScore: 0,
-      oppScore: 0,
+      botScore: 0,
       playerPlayedCards: [],
-      oppPlayedCards: [],
+      botPlayedCards: [],
     });
   };
 
-  // Get card counts for hand and played cards
+  // Get card counts
   const handCounts = getCardCounts(state.playerHand);
   const playerPlayedCounts = getCardCounts(state.playerPlayedCards);
-  const oppPlayedCounts = getCardCounts(state.oppPlayedCards);
+  const botPlayedCounts = getCardCounts(state.botPlayedCards);
 
   return (
     <div className="flex p-4 min-h-screen bg-gradient-to-b from-blue-200 to-gray-300">
@@ -248,31 +235,22 @@ export default function RPSGame() {
             </button>
           </Link>
         </div>
-        {/* Game Board */}
+
         <div className="bg-gray-100 rounded-lg shadow-lg p-6 flex flex-col gap-6">
-          {/* Opponent's Hand (Top) */}
+          {/* Bot's Hand */}
           <div>
             <h2 className="text-xl font-semibold mb-2 text-gray-700">
-              Opponent&apos;s Hand ({state.oppHand.length})
+              Bot&apos;s Hand ({state.botHand.length})
             </h2>
             <div className="flex gap-2 flex-wrap">
-              {Array(state.oppHand.length)
-                .fill(null)
-                .map((_, index) => (
-                  <Card
-                    key={`opp-card-${index}`}
-                    type={null}
-                    isOpponent={true}
-                  />
-                ))}
+              {state.botHand.map((_, index) => (
+                <Card key={`bot-card-${index}`} type={null} isOpponent={true} />
+              ))}
             </div>
           </div>
 
-          {/* Play Area (Middle) - Always Visible */}
+          {/* Play Area */}
           <div className="flex flex-col items-center">
-            <h2 className="text-xl font-semibold mb-2 text-gray-700">
-              Play Area
-            </h2>
             <div className="flex justify-center gap-12 mb-4">
               <div className="text-center">
                 <p className="text-lg font-semibold text-gray-700">You</p>
@@ -283,31 +261,33 @@ export default function RPSGame() {
                 />
               </div>
               <div className="text-center">
-                <p className="text-lg font-semibold text-gray-700">Opponent</p>
+                <p className="text-lg font-semibold text-gray-700">Bot</p>
                 <Card
-                  type={state.oppCard}
+                  type={state.botCard}
                   showResult={state.showResult}
                   isInPlayArea={true}
                 />
               </div>
             </div>
-            <AnimatePresence>
-              {state.result && (
-                <motion.p
-                  key={state.result}
-                  className="text-2xl font-bold text-gray-800 text-center"
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -20 }}
-                  transition={{ duration: 0.3 }}
-                >
-                  {state.result}
-                </motion.p>
-              )}
-            </AnimatePresence>
+            <div className="h-8 w-full flex justify-center items-center">
+              <AnimatePresence>
+                {state.result && (
+                  <motion.p
+                    key={state.result}
+                    className="text-2xl font-bold text-gray-800 text-center"
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -20 }}
+                    transition={{ duration: 0.3 }}
+                  >
+                    {state.result}
+                  </motion.p>
+                )}
+              </AnimatePresence>
+            </div>
           </div>
 
-          {/* Player's Hand (Bottom) */}
+          {/* Player's Hand */}
           <div>
             <h2 className="text-xl font-semibold mb-2 text-gray-700">
               Your Hand ({state.playerHand.length}){" "}
@@ -335,21 +315,21 @@ export default function RPSGame() {
 
         {/* Game Over */}
         {(state.playerHand.length === 0 && state.playerDeck.length === 0) ||
-        (state.oppHand.length === 0 && state.oppDeck.length === 0) ? (
+        (state.botHand.length === 0 && state.botDeck.length === 0) ? (
           <motion.div
             className="mt-6 text-center"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
           >
             <p className="text-2xl font-bold text-gray-800">
-              {state.playerScore > state.oppScore
+              {state.playerScore > state.botScore
                 ? "You Win the Game!"
-                : state.oppScore > state.playerScore
-                ? "Opponent Wins the Game!"
+                : state.botScore > state.playerScore
+                ? "Bot Wins the Game!"
                 : "Game Ends in a Tie!"}
             </p>
             <p className="text-lg text-gray-700 mt-2">
-              Final Score: You {state.playerScore} - {state.oppScore} Opponent
+              Final Score: You {state.playerScore} - {state.botScore} Bot
             </p>
             <button
               className="mt-4 px-6 py-2 bg-green-500 text-white rounded-lg shadow hover:bg-green-600"
@@ -365,12 +345,11 @@ export default function RPSGame() {
       <div className="w-48 bg-gray-800 text-white p-4 rounded-lg shadow-lg ml-4 flex flex-col gap-4">
         <h2 className="text-xl font-bold">Score</h2>
         <p className="text-lg">You: {state.playerScore}</p>
-        <p className="text-lg">Opponent: {state.oppScore}</p>
+        <p className="text-lg">Bot: {state.botScore}</p>
         <div className="mt-4">
           <p className="text-sm">Your Deck: {state.playerDeck.length}</p>
-          <p className="text-sm">Opponent Deck: {state.oppDeck.length}</p>
+          <p className="text-sm">Bot Deck: {state.botDeck.length}</p>
         </div>
-        {/* Played Cards History */}
         <div className="mt-4">
           <h3 className="text-lg font-semibold">Your Played Cards</h3>
           <div className="flex flex-row gap-2 mt-2 flex-wrap">
@@ -395,9 +374,7 @@ export default function RPSGame() {
           </div>
         </div>
         <div className="mt-4">
-          <h3 className="text-lg font-semibold">
-            Opponent&apos;s Played Cards
-          </h3>
+          <h3 className="text-lg font-semibold">Bot&apos;s Played Cards</h3>
           <div className="flex flex-row gap-2 mt-2 flex-wrap">
             {[
               "Rock",
@@ -408,12 +385,12 @@ export default function RPSGame() {
               "SuperScissors",
             ].map((type) => (
               <div
-                key={`opp-played-${type}`}
+                key={`bot-played-${type}`}
                 className="flex flex-col items-center"
               >
                 <Card type={type as CardType} size="small" />
                 <span className="text-sm mt-1">
-                  x{oppPlayedCounts[type as CardType] || 0}
+                  x{botPlayedCounts[type as CardType] || 0}
                 </span>
               </div>
             ))}
