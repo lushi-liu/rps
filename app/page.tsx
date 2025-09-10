@@ -35,7 +35,7 @@ export default function Home() {
 
   // Default settings for reset
   const defaultSettings: GameSettings = {
-    handSize: 8,
+    handSize: 6,
     deck: {
       regularRock: 4,
       regularPaper: 4,
@@ -44,7 +44,7 @@ export default function Home() {
       superPaper: 2,
       superScissors: 2,
     },
-    openHand: false,
+    openHand: true,
   };
 
   // Load settings from local storage on mount
