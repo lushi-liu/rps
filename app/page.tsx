@@ -13,11 +13,6 @@ export default function Home() {
             Play Vs Bot
           </button>
         </Link>
-        <Link href="/vs-player">
-          <button className="px-6 py-3 bg-blue-500 text-white rounded-lg shadow-lg hover:bg-blue-600">
-            Play Vs Player
-          </button>
-        </Link>
       </div>
     </div>
   );
