@@ -30,15 +30,30 @@ export default function Home() {
     },
     openHand: false,
   });
+  const [savedSettings, setSavedSettings] = useState<GameSettings | null>(null);
   const [error, setError] = useState("");
+
+  // Default settings for reset
+  const defaultSettings: GameSettings = {
+    handSize: 8,
+    deck: {
+      regularRock: 4,
+      regularPaper: 4,
+      regularScissors: 4,
+      superRock: 2,
+      superPaper: 2,
+      superScissors: 2,
+    },
+    openHand: false,
+  };
 
   // Load settings from local storage on mount
   useEffect(() => {
-    const savedSettings = localStorage.getItem("gameSettings");
-    if (savedSettings) {
+    const savedSettingsRaw = localStorage.getItem("gameSettings");
+    if (savedSettingsRaw) {
       try {
-        const parsed = JSON.parse(savedSettings);
-        setSettings({
+        const parsed = JSON.parse(savedSettingsRaw);
+        const loadedSettings: GameSettings = {
           handSize: Math.max(1, parsed.handSize || 8),
           deck: {
             regularRock: Math.max(0, parsed.deck?.regularRock ?? 0),
@@ -49,7 +64,9 @@ export default function Home() {
             superScissors: Math.max(0, parsed.deck?.superScissors ?? 0),
           },
           openHand: parsed.openHand ?? false,
-        });
+        };
+        setSettings(loadedSettings);
+        setSavedSettings(loadedSettings);
         console.log("Loaded from localStorage:", parsed);
       } catch (e) {
         console.error("Failed to parse localStorage gameSettings:", e);
@@ -92,7 +109,32 @@ export default function Home() {
       return;
     }
     localStorage.setItem("gameSettings", JSON.stringify(settings));
+    setSavedSettings(settings);
     console.log("Saved to localStorage:", settings);
+    setIsSettingsOpen(false);
+  };
+
+  const resetToDefault = () => {
+    setSettings(defaultSettings);
+    setError("");
+    console.log("Reset to default settings:", defaultSettings);
+  };
+
+  const cancelSettings = () => {
+    if (savedSettings) {
+      setSettings(savedSettings);
+      console.log(
+        "Cancelled changes, reverted to saved settings:",
+        savedSettings
+      );
+    } else {
+      setSettings(defaultSettings);
+      console.log(
+        "No saved settings, reverted to default settings:",
+        defaultSettings
+      );
+    }
+    setError("");
     setIsSettingsOpen(false);
   };
 
@@ -113,7 +155,7 @@ export default function Home() {
   return (
     <div className="flex flex-col items-center justify-center min-h-screen bg-gradient-to-b from-blue-200 to-gray-300">
       <h1 className="text-4xl font-bold mb-8 text-gray-800">
-        Rock-Paper-Scissors
+        Rock-Paper-Scissors Card Game
       </h1>
       <div className="flex gap-4">
         <Link href={`/vs-bot?${getQueryString()}`}>
@@ -200,7 +242,13 @@ export default function Home() {
                 Save
               </button>
               <button
-                onClick={() => setIsSettingsOpen(false)}
+                onClick={resetToDefault}
+                className="px-4 py-2 bg-yellow-500 text-white rounded-lg shadow hover:bg-yellow-600"
+              >
+                Reset to Default
+              </button>
+              <button
+                onClick={cancelSettings}
                 className="px-4 py-2 bg-gray-500 text-white rounded-lg shadow hover:bg-gray-600"
               >
                 Cancel

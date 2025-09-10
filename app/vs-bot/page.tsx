@@ -375,7 +375,7 @@ function RPSBotGame() {
           {/* Main Game Area */}
           <div className="flex flex-col flex-1 max-w-4xl">
             <h1 className="text-3xl font-bold mb-4 text-gray-800 text-center">
-              Vs Bot: Rock-Paper-Scissors
+              Vs Bot
             </h1>
             <div className="text-center mb-4">
               <Link href="/">
