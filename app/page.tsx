@@ -23,7 +23,7 @@ export default function Home() {
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isHowToPlayOpen, setIsHowToPlayOpen] = useState(false);
   const [settings, setSettings] = useState<GameSettings>({
-    handSize: 8,
+    handSize: 6,
     deck: {
       regularRock: 4,
       regularPaper: 4,
@@ -32,7 +32,7 @@ export default function Home() {
       superPaper: 2,
       superScissors: 2,
     },
-    openHand: false,
+    openHand: true,
   });
   const [savedSettings, setSavedSettings] = useState<GameSettings | null>(null);
   const [error, setError] = useState("");
