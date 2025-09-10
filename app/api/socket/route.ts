@@ -1,9 +1,12 @@
 import { Server } from "socket.io";
-import type { NextApiResponse } from "next";
+import { NextRequest } from "next/server";
 
 let io: Server | null = null;
 
-export async function GET(req: Request, res: NextApiResponse) {
+export async function GET(
+  req: NextRequest,
+  { params }: { params: Record<string, never> }
+) {
   if (!io) {
     console.log("Initializing Socket.IO server");
     const { Server: IOServer } = await import("socket.io");
