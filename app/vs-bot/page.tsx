@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { Suspense } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { FaHandRock, FaHandPaper, FaHandScissors } from "react-icons/fa";
 import { IconType } from "react-icons";
@@ -17,7 +17,7 @@ type CardType =
   | "SuperPaper"
   | "SuperScissors";
 
-// Define game state interface
+// Define game settings and state interfaces
 interface GameSettings {
   handSize: number;
   deck: {
@@ -48,14 +48,24 @@ interface GameState {
 
 // Create deck from settings
 const createDeck = (deckSettings: GameSettings["deck"]): CardType[] => {
-  const deck: CardType[] = [
-    ...Array(deckSettings.regularRock).fill("Rock" as CardType),
-    ...Array(deckSettings.regularPaper).fill("Paper" as CardType),
-    ...Array(deckSettings.regularScissors).fill("Scissors" as CardType),
-    ...Array(deckSettings.superRock).fill("SuperRock" as CardType),
-    ...Array(deckSettings.superPaper).fill("SuperPaper" as CardType),
-    ...Array(deckSettings.superScissors).fill("SuperScissors" as CardType),
-  ];
+  const deck: CardType[] = [];
+  if (deckSettings.regularRock > 0)
+    deck.push(...Array(deckSettings.regularRock).fill("Rock" as CardType));
+  if (deckSettings.regularPaper > 0)
+    deck.push(...Array(deckSettings.regularPaper).fill("Paper" as CardType));
+  if (deckSettings.regularScissors > 0)
+    deck.push(
+      ...Array(deckSettings.regularScissors).fill("Scissors" as CardType)
+    );
+  if (deckSettings.superRock > 0)
+    deck.push(...Array(deckSettings.superRock).fill("SuperRock" as CardType));
+  if (deckSettings.superPaper > 0)
+    deck.push(...Array(deckSettings.superPaper).fill("SuperPaper" as CardType));
+  if (deckSettings.superScissors > 0)
+    deck.push(
+      ...Array(deckSettings.superScissors).fill("SuperScissors" as CardType)
+    );
+  console.log("Created deck:", deck, "Total size:", deck.length);
   return deck;
 };
 
@@ -77,7 +87,16 @@ const drawInitialHand = (
   const shuffled = shuffle(deck);
   const hand = shuffled.slice(0, Math.min(handSize, deck.length));
   const remainingDeck = shuffled.slice(hand.length);
-  console.log("Initial hand:", hand, "Deck:", remainingDeck); // Debug
+  console.log(
+    "Initial hand:",
+    hand,
+    "Deck:",
+    remainingDeck,
+    "Hand size:",
+    hand.length,
+    "Deck size:",
+    remainingDeck.length
+  );
   return [hand, remainingDeck];
 };
 
@@ -105,90 +124,63 @@ const botPlay = (botHand: CardType[]): [CardType, number] => {
   return [botHand[index], index];
 };
 
-export default function RPSBotGame() {
+// Main game component
+function RPSBotGame() {
   const searchParams = useSearchParams();
 
-  // Load settings from query params or local storage
-  const defaultSettings: GameSettings = {
-    handSize: 0,
-    deck: {
-      regularRock: 0,
-      regularPaper: 0,
-      regularScissors: 0,
-      superRock: 0,
-      superPaper: 0,
-      superScissors: 0,
-    },
-    openHand: false,
+  // Load settings from query params or local storage, no default deck fallback
+  const getSettingsValue = (
+    key: string,
+    localKey: string,
+    defaultValue: number | boolean
+  ): number | boolean => {
+    const queryValue = searchParams.get(key);
+    if (queryValue !== null) {
+      return key === "openHand"
+        ? queryValue === "true"
+        : parseInt(queryValue) || 0;
+    }
+    const savedSettings = localStorage.getItem("gameSettings");
+    if (savedSettings) {
+      const parsed = JSON.parse(savedSettings);
+      if (key === "openHand") {
+        return parsed.openHand ?? defaultValue;
+      }
+      if (key === "handSize") {
+        return parsed.handSize ? Math.max(1, parsed.handSize) : defaultValue;
+      }
+      return parsed.deck?.[localKey] ?? 0;
+    }
+    return defaultValue;
   };
+
   const settings: GameSettings = {
-    handSize:
-      parseInt(searchParams.get("handSize") || "") ||
-      parseInt(
-        localStorage.getItem("gameSettings")
-          ? JSON.parse(localStorage.getItem("gameSettings")!).handSize
-          : "0"
-      ) ||
-      defaultSettings.handSize,
+    handSize: getSettingsValue("handSize", "handSize", 8) as number,
     deck: {
-      regularRock:
-        parseInt(searchParams.get("regularRock") || "") ||
-        parseInt(
-          localStorage.getItem("gameSettings")
-            ? JSON.parse(localStorage.getItem("gameSettings")!).deck.regularRock
-            : "0"
-        ) ||
-        defaultSettings.deck.regularRock,
-      regularPaper:
-        parseInt(searchParams.get("regularPaper") || "") ||
-        parseInt(
-          localStorage.getItem("gameSettings")
-            ? JSON.parse(localStorage.getItem("gameSettings")!).deck
-                .regularPaper
-            : "0"
-        ) ||
-        defaultSettings.deck.regularPaper,
-      regularScissors:
-        parseInt(searchParams.get("regularScissors") || "") ||
-        parseInt(
-          localStorage.getItem("gameSettings")
-            ? JSON.parse(localStorage.getItem("gameSettings")!).deck
-                .regularScissors
-            : "0"
-        ) ||
-        defaultSettings.deck.regularScissors,
-      superRock:
-        parseInt(searchParams.get("superRock") || "") ||
-        parseInt(
-          localStorage.getItem("gameSettings")
-            ? JSON.parse(localStorage.getItem("gameSettings")!).deck.superRock
-            : "0"
-        ) ||
-        defaultSettings.deck.superRock,
-      superPaper:
-        parseInt(searchParams.get("superPaper") || "") ||
-        parseInt(
-          localStorage.getItem("gameSettings")
-            ? JSON.parse(localStorage.getItem("gameSettings")!).deck.superPaper
-            : "0"
-        ) ||
-        defaultSettings.deck.superPaper,
-      superScissors:
-        parseInt(searchParams.get("superScissors") || "") ||
-        parseInt(
-          localStorage.getItem("gameSettings")
-            ? JSON.parse(localStorage.getItem("gameSettings")!).deck
-                .superScissors
-            : "0"
-        ) ||
-        defaultSettings.deck.superScissors,
+      regularRock: getSettingsValue("regularRock", "regularRock", 0) as number,
+      regularPaper: getSettingsValue(
+        "regularPaper",
+        "regularPaper",
+        0
+      ) as number,
+      regularScissors: getSettingsValue(
+        "regularScissors",
+        "regularScissors",
+        0
+      ) as number,
+      superRock: getSettingsValue("superRock", "superRock", 0) as number,
+      superPaper: getSettingsValue("superPaper", "superPaper", 0) as number,
+      superScissors: getSettingsValue(
+        "superScissors",
+        "superScissors",
+        0
+      ) as number,
     },
-    openHand:
-      (searchParams.get("openHand") ||
-        (localStorage.getItem("gameSettings")
-          ? JSON.parse(localStorage.getItem("gameSettings")!).openHand
-          : "false")) === "true",
+    openHand: getSettingsValue("openHand", "openHand", false) as boolean,
   };
+
+  // Log settings for debugging
+  console.log("Loaded settings:", settings);
 
   // Validate hand size against deck size
   const totalDeckSize = Object.values(settings.deck).reduce(
@@ -196,13 +188,18 @@ export default function RPSBotGame() {
     0
   );
   const validHandSize = Math.min(settings.handSize, totalDeckSize);
+  const isDeckEmpty = totalDeckSize === 0;
 
-  // Initialize decks and hands
-  const baseDeck = createDeck(settings.deck);
-  const [playerHand, playerDeck] = drawInitialHand(baseDeck, validHandSize);
-  const [botHand, botDeck] = drawInitialHand(baseDeck, validHandSize);
+  // Initialize decks and hands (only if deck is not empty)
+  const baseDeck = isDeckEmpty ? [] : createDeck(settings.deck);
+  const [playerHand, playerDeck] = isDeckEmpty
+    ? [[], []]
+    : drawInitialHand(baseDeck, validHandSize);
+  const [botHand, botDeck] = isDeckEmpty
+    ? [[], []]
+    : drawInitialHand(baseDeck, validHandSize);
 
-  const [state, setState] = useState<GameState>({
+  const [state, setState] = React.useState<GameState>({
     playerHand,
     playerDeck,
     botHand,
@@ -281,7 +278,7 @@ export default function RPSBotGame() {
         : state.playerHand.filter((_, i) => i !== index);
       const updatedBotHand = botDraw
         ? [...state.botHand.filter((_, i) => i !== botIndex), botDraw]
-        : state.botHand.filter((_, i) => i !== botIndex);
+        : state.botHand.filter((_, i) => i !== index);
       setState((prev) => ({
         ...prev,
         playerHand: updatedPlayerHand,
@@ -312,6 +309,7 @@ export default function RPSBotGame() {
   };
 
   const restartGame = () => {
+    if (isDeckEmpty) return; // Prevent restart with empty deck
     const newBaseDeck = createDeck(settings.deck);
     const [newPlayerHand, newPlayerDeck] = drawInitialHand(
       newBaseDeck,
@@ -344,187 +342,208 @@ export default function RPSBotGame() {
 
   return (
     <div className="flex p-4 min-h-screen bg-gradient-to-b from-blue-200 to-gray-300">
-      {/* Main Game Area */}
-      <div className="flex flex-col flex-1 max-w-4xl">
-        <h1 className="text-3xl font-bold mb-4 text-gray-800 text-center">
-          Vs Bot: Rock-Paper-Scissors
-        </h1>
-        <div className="text-center mb-4">
-          <Link href="/">
-            <button className="px-6 py-2 bg-green-500 text-white rounded-lg shadow hover:bg-green-600">
-              Back to Homepage
-            </button>
-          </Link>
+      {isDeckEmpty ? (
+        <div className="text-red-500 text-center p-4">
+          Error: Deck cannot be empty. Please configure settings.
         </div>
-
-        <div className="bg-gray-100 rounded-lg shadow-lg p-6 flex flex-col gap-6">
-          {/* Bot's Hand */}
-          <div>
-            <h2 className="text-xl font-semibold mb-2 text-gray-700">
-              Bot&apos;s Hand ({state.botHand.length})
-            </h2>
-            <div className="flex gap-2 flex-wrap">
-              {state.botHand.map((card, index) => (
-                <Card
-                  key={`bot-card-${index}`}
-                  type={settings.openHand ? card : null}
-                  isOpponent={true}
-                />
-              ))}
+      ) : (
+        <div className="flex flex-1">
+          {/* Main Game Area */}
+          <div className="flex flex-col flex-1 max-w-4xl">
+            <h1 className="text-3xl font-bold mb-4 text-gray-800 text-center">
+              Vs Bot: Rock-Paper-Scissors
+            </h1>
+            <div className="text-center mb-4">
+              <Link href="/">
+                <button className="px-6 py-2 bg-green-500 text-white rounded-lg shadow hover:bg-green-600">
+                  Back to Homepage
+                </button>
+              </Link>
             </div>
+
+            <div className="bg-gray-100 rounded-lg shadow-lg p-6 flex flex-col gap-6">
+              {/* Bot's Hand */}
+              <div>
+                <h2 className="text-xl font-semibold mb-2 text-gray-700">
+                  Bot&apos;s Hand ({state.botHand.length})
+                </h2>
+                <div className="flex gap-2 flex-wrap">
+                  {state.botHand.map((card, index) => (
+                    <Card
+                      key={`bot-card-${index}`}
+                      type={settings.openHand ? card : null}
+                      isOpponent={true}
+                    />
+                  ))}
+                </div>
+              </div>
+
+              {/* Play Area */}
+              <div className="flex flex-col items-center">
+                <h2 className="text-xl font-semibold mb-2 text-gray-700">
+                  Play Area
+                </h2>
+                <div className="flex justify-center gap-12 mb-4">
+                  <div className="text-center">
+                    <p className="text-lg font-semibold text-gray-700">You</p>
+                    <Card
+                      type={state.playerCard}
+                      showResult={state.showResult}
+                      isInPlayArea={true}
+                    />
+                  </div>
+                  <div className="text-center">
+                    <p className="text-lg font-semibold text-gray-700">Bot</p>
+                    <Card
+                      type={state.botCard}
+                      showResult={state.showResult}
+                      isInPlayArea={true}
+                    />
+                  </div>
+                </div>
+                <div className="h-8 w-full flex justify-center items-center">
+                  <AnimatePresence>
+                    {state.result && (
+                      <motion.p
+                        key={state.result}
+                        className="text-2xl font-bold text-gray-800 text-center"
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -20 }}
+                        transition={{ duration: 0.3 }}
+                      >
+                        {state.result}
+                      </motion.p>
+                    )}
+                  </AnimatePresence>
+                </div>
+              </div>
+
+              {/* Player's Hand */}
+              <div>
+                <h2 className="text-xl font-semibold mb-2 text-gray-700">
+                  Your Hand ({state.playerHand.length}){" "}
+                  <span className="text-sm">
+                    (Rock x{handCounts.Rock || 0}, Paper x
+                    {handCounts.Paper || 0}, Scissors x
+                    {handCounts.Scissors || 0}, SuperRock x
+                    {handCounts.SuperRock || 0}, SuperPaper x
+                    {handCounts.SuperPaper || 0}, SuperScissors x
+                    {handCounts.SuperScissors || 0})
+                  </span>
+                </h2>
+                <div className="flex gap-2 flex-wrap">
+                  {state.playerHand.map((card, index) => (
+                    <Card
+                      key={`${card}-${index}`}
+                      type={card}
+                      isPlayable={true}
+                      showResult={state.showResult}
+                      onClick={() => playCard(card, index)}
+                    />
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            {/* Game Over */}
+            {(state.playerHand.length === 0 && state.playerDeck.length === 0) ||
+            (state.botHand.length === 0 && state.botDeck.length === 0) ? (
+              <motion.div
+                className="mt-6 text-center"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+              >
+                <p className="text-2xl font-bold text-gray-800">
+                  {state.playerScore > state.botScore
+                    ? "You Win the Game!"
+                    : state.botScore > state.playerScore
+                    ? "Bot Wins the Game!"
+                    : "Game Ends in a Tie!"}
+                </p>
+                <p className="text-lg text-gray-700 mt-2">
+                  Final Score: You {state.playerScore} - {state.botScore} Bot
+                </p>
+                <button
+                  className="mt-4 px-6 py-2 bg-green-500 text-white rounded-lg shadow hover:bg-green-600"
+                  onClick={restartGame}
+                >
+                  Restart Game
+                </button>
+              </motion.div>
+            ) : null}
           </div>
 
-          {/* Play Area */}
-          <div className="flex flex-col items-center">
-            <h2 className="text-xl font-semibold mb-2 text-gray-700">
-              Play Area
-            </h2>
-            <div className="flex justify-center gap-12 mb-4">
-              <div className="text-center">
-                <p className="text-lg font-semibold text-gray-700">You</p>
-                <Card
-                  type={state.playerCard}
-                  showResult={state.showResult}
-                  isInPlayArea={true}
-                />
-              </div>
-              <div className="text-center">
-                <p className="text-lg font-semibold text-gray-700">Bot</p>
-                <Card
-                  type={state.botCard}
-                  showResult={state.showResult}
-                  isInPlayArea={true}
-                />
-              </div>
+          {/* Score Sidebar */}
+          <div className="w-48 bg-gray-800 text-white p-4 rounded-lg shadow-lg ml-4 flex flex-col gap-4">
+            <h2 className="text-xl font-bold">Score</h2>
+            <p className="text-lg">You: {state.playerScore}</p>
+            <p className="text-lg">Bot: {state.botScore}</p>
+            <div className="mt-4">
+              <p className="text-sm">Your Deck: {state.playerDeck.length}</p>
+              <p className="text-sm">Bot Deck: {state.botDeck.length}</p>
             </div>
-            <div className="h-8 w-full flex justify-center items-center">
-              <AnimatePresence>
-                {state.result && (
-                  <motion.p
-                    key={state.result}
-                    className="text-2xl font-bold text-gray-800 text-center"
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -20 }}
-                    transition={{ duration: 0.3 }}
+            <div className="mt-4">
+              <h3 className="text-lg font-semibold">Your Played Cards</h3>
+              <div className="flex flex-row gap-2 mt-2 flex-wrap">
+                {[
+                  "Rock",
+                  "Paper",
+                  "Scissors",
+                  "SuperRock",
+                  "SuperPaper",
+                  "SuperScissors",
+                ].map((type) => (
+                  <div
+                    key={`player-played-${type}`}
+                    className="flex flex-col items-center"
                   >
-                    {state.result}
-                  </motion.p>
-                )}
-              </AnimatePresence>
+                    <Card type={type as CardType} size="small" />
+                    <span className="text-sm mt-1">
+                      x{playerPlayedCounts[type as CardType] || 0}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+            <div className="mt-4">
+              <h3 className="text-lg font-semibold">Bot&apos;s Played Cards</h3>
+              <div className="flex flex-row gap-2 mt-2 flex-wrap">
+                {[
+                  "Rock",
+                  "Paper",
+                  "Scissors",
+                  "SuperRock",
+                  "SuperPaper",
+                  "SuperScissors",
+                ].map((type) => (
+                  <div
+                    key={`bot-played-${type}`}
+                    className="flex flex-col items-center"
+                  >
+                    <Card type={type as CardType} size="small" />
+                    <span className="text-sm mt-1">
+                      x{botPlayedCounts[type as CardType] || 0}
+                    </span>
+                  </div>
+                ))}
+              </div>
             </div>
           </div>
-
-          {/* Player's Hand */}
-          <div>
-            <h2 className="text-xl font-semibold mb-2 text-gray-700">
-              Your Hand ({state.playerHand.length}){" "}
-              <span className="text-sm">
-                (Rock x{handCounts.Rock || 0}, Paper x{handCounts.Paper || 0},
-                Scissors x{handCounts.Scissors || 0}, SuperRock x
-                {handCounts.SuperRock || 0}, SuperPaper x
-                {handCounts.SuperPaper || 0}, SuperScissors x
-                {handCounts.SuperScissors || 0})
-              </span>
-            </h2>
-            <div className="flex gap-2 flex-wrap">
-              {state.playerHand.map((card, index) => (
-                <Card
-                  key={`${card}-${index}`}
-                  type={card}
-                  isPlayable={true}
-                  showResult={state.showResult}
-                  onClick={() => playCard(card, index)}
-                />
-              ))}
-            </div>
-          </div>
         </div>
-
-        {/* Game Over */}
-        {(state.playerHand.length === 0 && state.playerDeck.length === 0) ||
-        (state.botHand.length === 0 && state.botDeck.length === 0) ? (
-          <motion.div
-            className="mt-6 text-center"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-          >
-            <p className="text-2xl font-bold text-gray-800">
-              {state.playerScore > state.botScore
-                ? "You Win the Game!"
-                : state.botScore > state.playerScore
-                ? "Bot Wins the Game!"
-                : "Game Ends in a Tie!"}
-            </p>
-            <p className="text-lg text-gray-700 mt-2">
-              Final Score: You {state.playerScore} - {state.botScore} Bot
-            </p>
-            <button
-              className="mt-4 px-6 py-2 bg-green-500 text-white rounded-lg shadow hover:bg-green-600"
-              onClick={restartGame}
-            >
-              Restart Game
-            </button>
-          </motion.div>
-        ) : null}
-      </div>
-
-      {/* Score Sidebar */}
-      <div className="w-48 bg-gray-800 text-white p-4 rounded-lg shadow-lg ml-4 flex flex-col gap-4">
-        <h2 className="text-xl font-bold">Score</h2>
-        <p className="text-lg">You: {state.playerScore}</p>
-        <p className="text-lg">Bot: {state.botScore}</p>
-        <div className="mt-4">
-          <p className="text-sm">Your Deck: {state.playerDeck.length}</p>
-          <p className="text-sm">Bot Deck: {state.botDeck.length}</p>
-        </div>
-        <div className="mt-4">
-          <h3 className="text-lg font-semibold">Your Played Cards</h3>
-          <div className="flex flex-row gap-2 mt-2 flex-wrap">
-            {[
-              "Rock",
-              "Paper",
-              "Scissors",
-              "SuperRock",
-              "SuperPaper",
-              "SuperScissors",
-            ].map((type) => (
-              <div
-                key={`player-played-${type}`}
-                className="flex flex-col items-center"
-              >
-                <Card type={type as CardType} size="small" />
-                <span className="text-sm mt-1">
-                  x{playerPlayedCounts[type as CardType] || 0}
-                </span>
-              </div>
-            ))}
-          </div>
-        </div>
-        <div className="mt-4">
-          <h3 className="text-lg font-semibold">Bot&apos;s Played Cards</h3>
-          <div className="flex flex-row gap-2 mt-2 flex-wrap">
-            {[
-              "Rock",
-              "Paper",
-              "Scissors",
-              "SuperRock",
-              "SuperPaper",
-              "SuperScissors",
-            ].map((type) => (
-              <div
-                key={`bot-played-${type}`}
-                className="flex flex-col items-center"
-              >
-                <Card type={type as CardType} size="small" />
-                <span className="text-sm mt-1">
-                  x{botPlayedCounts[type as CardType] || 0}
-                </span>
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
+      )}
     </div>
+  );
+}
+
+export default function VsBotPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="text-center p-4 text-gray-800">Loading game...</div>
+      }
+    >
+      <RPSBotGame />
+    </Suspense>
   );
 }
