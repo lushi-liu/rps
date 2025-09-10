@@ -5,7 +5,7 @@ let io: Server | null = null;
 
 export async function GET(
   req: NextRequest,
-  { params }: { params: Record<string, never> }
+  { params }: { params: Promise<Record<string, never>> }
 ) {
   if (!io) {
     console.log("Initializing Socket.IO server");
