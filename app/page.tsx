@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
+import { motion } from "framer-motion";
 import { SettingsModal } from "../components/SettingsModal";
 import { HowToPlayModal } from "../components/HowToPlayModal";
 
@@ -22,7 +23,7 @@ export default function Home() {
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isHowToPlayOpen, setIsHowToPlayOpen] = useState(false);
   const [settings, setSettings] = useState<GameSettings>({
-    handSize: 6,
+    handSize: 8,
     deck: {
       regularRock: 4,
       regularPaper: 4,
@@ -31,7 +32,7 @@ export default function Home() {
       superPaper: 2,
       superScissors: 2,
     },
-    openHand: true,
+    openHand: false,
   });
   const [savedSettings, setSavedSettings] = useState<GameSettings | null>(null);
   const [error, setError] = useState("");
@@ -78,34 +79,47 @@ export default function Home() {
   };
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen bg-gradient-to-b from-blue-200 to-gray-300">
-      <h1 className="text-4xl font-bold mb-8 text-gray-800">
+    <div className="flex flex-col items-center justify-center min-h-screen bg-gradient-to-br from-blue-300 via-purple-200 to-pink-200">
+      <motion.h1
+        className="text-5xl font-extrabold mb-10 text-gray-800 drop-shadow-lg"
+        initial={{ opacity: 0, scale: 0.9 }}
+        animate={{ opacity: 1, scale: 1 }}
+        transition={{ duration: 0.5, ease: "easeOut" }}
+      >
         Rock-Paper-Scissors Card Game
-      </h1>
-      <div className="flex gap-4">
+      </motion.h1>
+      <div className="flex gap-6">
         <Link href={`/vs-bot?${getQueryString()}`}>
-          <button className="px-6 py-3 bg-blue-500 text-white rounded-lg shadow-lg hover:bg-blue-600">
+          <motion.button
+            className="px-8 py-4 bg-blue-600 text-white text-lg font-semibold rounded-xl shadow-md hover:bg-blue-700 focus:ring-4 focus:ring-blue-300 transition"
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+          >
             Play vs Bot
-          </button>
+          </motion.button>
         </Link>
-        <button
+        <motion.button
           onClick={() => {
             setIsSettingsOpen(true);
             console.log("Opened Settings modal");
           }}
-          className="px-6 py-3 bg-gray-500 text-white rounded-lg shadow-lg hover:bg-gray-600"
+          className="px-8 py-4 bg-gray-600 text-white text-lg font-semibold rounded-xl shadow-md hover:bg-gray-700 focus:ring-4 focus:ring-gray-300 transition"
+          whileHover={{ scale: 1.05 }}
+          whileTap={{ scale: 0.95 }}
         >
           Settings
-        </button>
-        <button
+        </motion.button>
+        <motion.button
           onClick={() => {
             setIsHowToPlayOpen(true);
             console.log("Opened How to Play modal");
           }}
-          className="px-6 py-3 bg-green-500 text-white rounded-lg shadow-lg hover:bg-green-600"
+          className="px-8 py-4 bg-green-600 text-white text-lg font-semibold rounded-xl shadow-md hover:bg-green-700 focus:ring-4 focus:ring-green-300 transition"
+          whileHover={{ scale: 1.05 }}
+          whileTap={{ scale: 0.95 }}
         >
           How to Play
-        </button>
+        </motion.button>
       </div>
 
       <SettingsModal
