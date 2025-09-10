@@ -6,6 +6,7 @@ import { FaHandRock, FaHandPaper, FaHandScissors } from "react-icons/fa";
 import { IconType } from "react-icons";
 import { Card } from "../../components/Card";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 
 // Define card types
 type CardType =
@@ -17,6 +18,19 @@ type CardType =
   | "SuperScissors";
 
 // Define game state interface
+interface GameSettings {
+  handSize: number;
+  deck: {
+    regularRock: number;
+    regularPaper: number;
+    regularScissors: number;
+    superRock: number;
+    superPaper: number;
+    superScissors: number;
+  };
+  openHand: boolean;
+}
+
 interface GameState {
   playerHand: CardType[];
   playerDeck: CardType[];
@@ -32,15 +46,18 @@ interface GameState {
   botPlayedCards: CardType[];
 }
 
-// Base deck: 4 of each regular, 2 of each super
-const baseDeck: CardType[] = [
-  ...Array(4).fill("Rock" as CardType),
-  ...Array(4).fill("Paper" as CardType),
-  ...Array(4).fill("Scissors" as CardType),
-  ...Array(2).fill("SuperRock" as CardType),
-  ...Array(2).fill("SuperPaper" as CardType),
-  ...Array(2).fill("SuperScissors" as CardType),
-];
+// Create deck from settings
+const createDeck = (deckSettings: GameSettings["deck"]): CardType[] => {
+  const deck: CardType[] = [
+    ...Array(deckSettings.regularRock).fill("Rock" as CardType),
+    ...Array(deckSettings.regularPaper).fill("Paper" as CardType),
+    ...Array(deckSettings.regularScissors).fill("Scissors" as CardType),
+    ...Array(deckSettings.superRock).fill("SuperRock" as CardType),
+    ...Array(deckSettings.superPaper).fill("SuperPaper" as CardType),
+    ...Array(deckSettings.superScissors).fill("SuperScissors" as CardType),
+  ];
+  return deck;
+};
 
 // Shuffle array (Fisher-Yates)
 const shuffle = <T,>(array: T[]): T[] => {
@@ -52,11 +69,14 @@ const shuffle = <T,>(array: T[]): T[] => {
   return shuffled;
 };
 
-// Initialize hand with exactly 8 cards
-const drawInitialHand = (deck: CardType[]): [CardType[], CardType[]] => {
+// Initialize hand with specified size
+const drawInitialHand = (
+  deck: CardType[],
+  handSize: number
+): [CardType[], CardType[]] => {
   const shuffled = shuffle(deck);
-  const hand = shuffled.slice(0, 8);
-  const remainingDeck = shuffled.slice(8);
+  const hand = shuffled.slice(0, Math.min(handSize, deck.length));
+  const remainingDeck = shuffled.slice(hand.length);
   console.log("Initial hand:", hand, "Deck:", remainingDeck); // Debug
   return [hand, remainingDeck];
 };
@@ -86,8 +106,102 @@ const botPlay = (botHand: CardType[]): [CardType, number] => {
 };
 
 export default function RPSBotGame() {
-  const [playerHand, playerDeck] = drawInitialHand(baseDeck);
-  const [botHand, botDeck] = drawInitialHand(baseDeck);
+  const searchParams = useSearchParams();
+
+  // Load settings from query params or local storage
+  const defaultSettings: GameSettings = {
+    handSize: 0,
+    deck: {
+      regularRock: 0,
+      regularPaper: 0,
+      regularScissors: 0,
+      superRock: 0,
+      superPaper: 0,
+      superScissors: 0,
+    },
+    openHand: false,
+  };
+  const settings: GameSettings = {
+    handSize:
+      parseInt(searchParams.get("handSize") || "") ||
+      parseInt(
+        localStorage.getItem("gameSettings")
+          ? JSON.parse(localStorage.getItem("gameSettings")!).handSize
+          : "0"
+      ) ||
+      defaultSettings.handSize,
+    deck: {
+      regularRock:
+        parseInt(searchParams.get("regularRock") || "") ||
+        parseInt(
+          localStorage.getItem("gameSettings")
+            ? JSON.parse(localStorage.getItem("gameSettings")!).deck.regularRock
+            : "0"
+        ) ||
+        defaultSettings.deck.regularRock,
+      regularPaper:
+        parseInt(searchParams.get("regularPaper") || "") ||
+        parseInt(
+          localStorage.getItem("gameSettings")
+            ? JSON.parse(localStorage.getItem("gameSettings")!).deck
+                .regularPaper
+            : "0"
+        ) ||
+        defaultSettings.deck.regularPaper,
+      regularScissors:
+        parseInt(searchParams.get("regularScissors") || "") ||
+        parseInt(
+          localStorage.getItem("gameSettings")
+            ? JSON.parse(localStorage.getItem("gameSettings")!).deck
+                .regularScissors
+            : "0"
+        ) ||
+        defaultSettings.deck.regularScissors,
+      superRock:
+        parseInt(searchParams.get("superRock") || "") ||
+        parseInt(
+          localStorage.getItem("gameSettings")
+            ? JSON.parse(localStorage.getItem("gameSettings")!).deck.superRock
+            : "0"
+        ) ||
+        defaultSettings.deck.superRock,
+      superPaper:
+        parseInt(searchParams.get("superPaper") || "") ||
+        parseInt(
+          localStorage.getItem("gameSettings")
+            ? JSON.parse(localStorage.getItem("gameSettings")!).deck.superPaper
+            : "0"
+        ) ||
+        defaultSettings.deck.superPaper,
+      superScissors:
+        parseInt(searchParams.get("superScissors") || "") ||
+        parseInt(
+          localStorage.getItem("gameSettings")
+            ? JSON.parse(localStorage.getItem("gameSettings")!).deck
+                .superScissors
+            : "0"
+        ) ||
+        defaultSettings.deck.superScissors,
+    },
+    openHand:
+      (searchParams.get("openHand") ||
+        (localStorage.getItem("gameSettings")
+          ? JSON.parse(localStorage.getItem("gameSettings")!).openHand
+          : "false")) === "true",
+  };
+
+  // Validate hand size against deck size
+  const totalDeckSize = Object.values(settings.deck).reduce(
+    (sum, count) => sum + count,
+    0
+  );
+  const validHandSize = Math.min(settings.handSize, totalDeckSize);
+
+  // Initialize decks and hands
+  const baseDeck = createDeck(settings.deck);
+  const [playerHand, playerDeck] = drawInitialHand(baseDeck, validHandSize);
+  const [botHand, botDeck] = drawInitialHand(baseDeck, validHandSize);
+
   const [state, setState] = useState<GameState>({
     playerHand,
     playerDeck,
@@ -119,11 +233,11 @@ export default function RPSBotGame() {
     const newPlayerDeck = [...state.playerDeck];
     const newBotDeck = [...state.botDeck];
     const playerDraw =
-      state.playerHand.length <= 8 && newPlayerDeck.length > 0
+      state.playerHand.length <= validHandSize && newPlayerDeck.length > 0
         ? newPlayerDeck.shift()
         : null;
     const botDraw =
-      state.botHand.length <= 8 && newBotDeck.length > 0
+      state.botHand.length <= validHandSize && newBotDeck.length > 0
         ? newBotDeck.shift()
         : null;
 
@@ -198,8 +312,15 @@ export default function RPSBotGame() {
   };
 
   const restartGame = () => {
-    const [newPlayerHand, newPlayerDeck] = drawInitialHand(baseDeck);
-    const [newBotHand, newBotDeck] = drawInitialHand(baseDeck);
+    const newBaseDeck = createDeck(settings.deck);
+    const [newPlayerHand, newPlayerDeck] = drawInitialHand(
+      newBaseDeck,
+      validHandSize
+    );
+    const [newBotHand, newBotDeck] = drawInitialHand(
+      newBaseDeck,
+      validHandSize
+    );
     setState({
       playerHand: newPlayerHand,
       playerDeck: newPlayerDeck,
@@ -243,14 +364,21 @@ export default function RPSBotGame() {
               Bot&apos;s Hand ({state.botHand.length})
             </h2>
             <div className="flex gap-2 flex-wrap">
-              {state.botHand.map((_, index) => (
-                <Card key={`bot-card-${index}`} type={null} isOpponent={true} />
+              {state.botHand.map((card, index) => (
+                <Card
+                  key={`bot-card-${index}`}
+                  type={settings.openHand ? card : null}
+                  isOpponent={true}
+                />
               ))}
             </div>
           </div>
 
           {/* Play Area */}
           <div className="flex flex-col items-center">
+            <h2 className="text-xl font-semibold mb-2 text-gray-700">
+              Play Area
+            </h2>
             <div className="flex justify-center gap-12 mb-4">
               <div className="text-center">
                 <p className="text-lg font-semibold text-gray-700">You</p>
