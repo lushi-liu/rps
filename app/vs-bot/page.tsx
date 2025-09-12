@@ -455,15 +455,7 @@ function RPSBotGame() {
               {/* Player's Hand */}
               <div>
                 <h2 className="text-lg sm:text-xl font-semibold mb-2 text-gray-700">
-                  Your Hand ({state.playerHand.length}){" "}
-                  <span className="text-xs sm:text-sm">
-                    (Rock x{handCounts.Rock || 0}, Paper x
-                    {handCounts.Paper || 0}, Scissors x
-                    {handCounts.Scissors || 0}, SuperRock x
-                    {handCounts.SuperRock || 0}, SuperPaper x
-                    {handCounts.SuperPaper || 0}, SuperScissors x
-                    {handCounts.SuperScissors || 0})
-                  </span>
+                  Your Hand ({state.playerHand.length})
                 </h2>
                 <div className="flex gap-1 sm:gap-2 flex-wrap justify-center">
                   {state.playerHand.map((card, index) => (
