@@ -365,39 +365,44 @@ function RPSBotGame() {
   const botPlayedCounts = getCardCounts(state.botPlayedCards);
 
   return (
-    <div className="flex p-4 min-h-screen bg-gradient-to-b from-blue-200 to-gray-300">
+    <div className="flex flex-col p-4 sm:p-6 min-h-screen bg-gradient-to-br from-blue-300 via-purple-200 to-pink-200">
       {isDeckEmpty ? (
-        <div className="text-red-500 text-center p-4">
+        <div className="text-red-500 text-center p-4 sm:p-6 text-base sm:text-lg w-full">
           Error: Deck cannot be empty. Please configure settings.
         </div>
       ) : (
-        <div className="flex flex-1">
+        <div className="flex flex-col sm:flex-row gap-4 sm:gap-6 w-full">
           {/* Main Game Area */}
-          <div className="flex flex-col flex-1 max-w-4xl">
-            <h1 className="text-3xl font-bold mb-4 text-gray-800 text-center">
+          <div className="flex flex-col flex-1 w-full">
+            <h1 className="text-2xl sm:text-3xl font-bold mb-4 text-gray-800 text-center">
               Vs Bot
             </h1>
             <div className="text-center mb-4">
               <Link href="/">
-                <button className="px-6 py-2 bg-green-500 text-white rounded-lg shadow hover:bg-green-600">
+                <motion.button
+                  className="px-4 sm:px-6 py-2 bg-green-600 text-white text-base sm:text-lg font-semibold rounded-xl shadow-md hover:bg-green-700 focus:ring-4 focus:ring-green-300 transition w-full sm:w-auto"
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                >
                   Back to Homepage
-                </button>
+                </motion.button>
               </Link>
             </div>
 
-            <div className="bg-gray-100 rounded-lg shadow-lg p-6 flex flex-col gap-6">
+            <div className="bg-gray-100 rounded-lg shadow-lg p-4 sm:p-6 flex flex-col gap-4 sm:gap-6">
               {/* Bot's Hand */}
               <div>
-                <h2 className="text-xl font-semibold mb-2 text-gray-700">
+                <h2 className="text-lg sm:text-xl font-semibold mb-2 text-gray-700">
                   Bot&apos;s Hand ({state.botHand.length})
                 </h2>
-                <div className="flex gap-2 flex-wrap">
+                <div className="flex gap-1 sm:gap-2 flex-wrap justify-center">
                   {state.botHand.map((card, index) => (
                     <Card
                       key={`bot-card-${index}`}
-                      type={settings.openHand ? card : null}
+                      type={settings?.openHand ? card : null}
                       isOpponent={true}
                       showResult={false}
+                      size={window.innerWidth < 640 ? "small" : "default"}
                     />
                   ))}
                 </div>
@@ -405,30 +410,36 @@ function RPSBotGame() {
 
               {/* Play Area */}
               <div className="flex flex-col items-center">
-                <div className="flex justify-center gap-12 mb-4">
+                <div className="flex justify-center gap-4 sm:gap-12 mb-4">
                   <div className="text-center">
-                    <p className="text-lg font-semibold text-gray-700">You</p>
+                    <p className="text-base sm:text-lg font-semibold text-gray-700">
+                      You
+                    </p>
                     <Card
                       type={state.playerCard}
                       showResult={state.showResult}
                       isInPlayArea={true}
+                      size={window.innerWidth < 640 ? "small" : "default"}
                     />
                   </div>
                   <div className="text-center">
-                    <p className="text-lg font-semibold text-gray-700">Bot</p>
+                    <p className="text-base sm:text-lg font-semibold text-gray-700">
+                      Bot
+                    </p>
                     <Card
                       type={state.botCard}
                       showResult={state.showResult}
                       isInPlayArea={true}
+                      size={window.innerWidth < 640 ? "small" : "default"}
                     />
                   </div>
                 </div>
-                <div className="h-8 w-full flex justify-center items-center">
+                <div className="h-6 sm:h-8 w-full flex justify-center items-center">
                   <AnimatePresence>
                     {state.result && (
                       <motion.p
                         key={state.result}
-                        className="text-2xl font-bold text-gray-800 text-center"
+                        className="text-xl sm:text-2xl font-bold text-gray-800 text-center"
                         initial={{ opacity: 0, y: 20 }}
                         animate={{ opacity: 1, y: 0 }}
                         exit={{ opacity: 0, y: -20 }}
@@ -443,9 +454,9 @@ function RPSBotGame() {
 
               {/* Player's Hand */}
               <div>
-                <h2 className="text-xl font-semibold mb-2 text-gray-700">
+                <h2 className="text-lg sm:text-xl font-semibold mb-2 text-gray-700">
                   Your Hand ({state.playerHand.length}){" "}
-                  <span className="text-sm">
+                  <span className="text-xs sm:text-sm">
                     (Rock x{handCounts.Rock || 0}, Paper x
                     {handCounts.Paper || 0}, Scissors x
                     {handCounts.Scissors || 0}, SuperRock x
@@ -454,7 +465,7 @@ function RPSBotGame() {
                     {handCounts.SuperScissors || 0})
                   </span>
                 </h2>
-                <div className="flex gap-2 flex-wrap">
+                <div className="flex gap-1 sm:gap-2 flex-wrap justify-center">
                   {state.playerHand.map((card, index) => (
                     <Card
                       key={`${card}-${index}`}
@@ -462,6 +473,7 @@ function RPSBotGame() {
                       isPlayable={true}
                       showResult={state.showResult}
                       onClick={() => playCard(card, index)}
+                      size={window.innerWidth < 640 ? "small" : "default"}
                     />
                   ))}
                 </div>
@@ -472,42 +484,50 @@ function RPSBotGame() {
             {(state.playerHand.length === 0 && state.playerDeck.length === 0) ||
             (state.botHand.length === 0 && state.botDeck.length === 0) ? (
               <motion.div
-                className="mt-6 text-center"
+                className="mt-4 sm:mt-6 text-center"
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
               >
-                <p className="text-2xl font-bold text-gray-800">
+                <p className="text-xl sm:text-2xl font-bold text-gray-800">
                   {state.playerScore > state.botScore
                     ? "You Win the Game!"
                     : state.botScore > state.playerScore
                     ? "Bot Wins the Game!"
                     : "Game Ends in a Tie!"}
                 </p>
-                <p className="text-lg text-gray-700 mt-2">
+                <p className="text-base sm:text-lg text-gray-700 mt-2">
                   Final Score: You {state.playerScore} - {state.botScore} Bot
                 </p>
-                <button
-                  className="mt-4 px-6 py-2 bg-green-500 text-white rounded-lg shadow hover:bg-green-600"
+                <motion.button
+                  className="mt-4 px-4 sm:px-6 py-2 bg-green-600 text-white text-base sm:text-lg font-semibold rounded-xl shadow-md hover:bg-green-700 focus:ring-4 focus:ring-green-300 transition w-full sm:w-auto"
                   onClick={restartGame}
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
                 >
                   Restart Game
-                </button>
+                </motion.button>
               </motion.div>
             ) : null}
           </div>
 
           {/* Score Sidebar */}
-          <div className="w-48 bg-gray-800 text-white p-4 rounded-lg shadow-lg ml-4 flex flex-col gap-4">
-            <h2 className="text-xl font-bold">Score</h2>
-            <p className="text-lg">You: {state.playerScore}</p>
-            <p className="text-lg">Bot: {state.botScore}</p>
+          <div className="w-full sm:w-48 bg-gray-800 text-white p-4 rounded-lg shadow-lg mt-4 sm:mt-0">
+            <h2 className="text-lg sm:text-xl font-bold">Score</h2>
+            <p className="text-base sm:text-lg">You: {state.playerScore}</p>
+            <p className="text-base sm:text-lg">Bot: {state.botScore}</p>
             <div className="mt-4">
-              <p className="text-sm">Your Deck: {state.playerDeck.length}</p>
-              <p className="text-sm">Bot Deck: {state.botDeck.length}</p>
+              <p className="text-xs sm:text-sm">
+                Your Deck: {state.playerDeck.length}
+              </p>
+              <p className="text-xs sm:text-sm">
+                Bot Deck: {state.botDeck.length}
+              </p>
             </div>
             <div className="mt-4">
-              <h3 className="text-lg font-semibold">Your Played Cards</h3>
-              <div className="flex flex-row gap-2 mt-2 flex-wrap">
+              <h3 className="text-base sm:text-lg font-semibold">
+                Your Played Cards
+              </h3>
+              <div className="flex flex-row gap-1 sm:gap-2 mt-2 flex-wrap">
                 {[
                   "Rock",
                   "Paper",
@@ -521,7 +541,7 @@ function RPSBotGame() {
                     className="flex flex-col items-center"
                   >
                     <Card type={type as CardType} size="small" />
-                    <span className="text-sm mt-1">
+                    <span className="text-xs sm:text-sm mt-1">
                       x{playerPlayedCounts[type as CardType] || 0}
                     </span>
                   </div>
@@ -529,8 +549,10 @@ function RPSBotGame() {
               </div>
             </div>
             <div className="mt-4">
-              <h3 className="text-lg font-semibold">Bot&apos;s Played Cards</h3>
-              <div className="flex flex-row gap-2 mt-2 flex-wrap">
+              <h3 className="text-base sm:text-lg font-semibold">
+                Bot&apos;s Played Cards
+              </h3>
+              <div className="flex flex-row gap-1 sm:gap-2 mt-2 flex-wrap">
                 {[
                   "Rock",
                   "Paper",
@@ -544,7 +566,7 @@ function RPSBotGame() {
                     className="flex flex-col items-center"
                   >
                     <Card type={type as CardType} size="small" />
-                    <span className="text-sm mt-1">
+                    <span className="text-xs sm:text-sm mt-1">
                       x{botPlayedCounts[type as CardType] || 0}
                     </span>
                   </div>
