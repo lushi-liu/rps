@@ -79,19 +79,19 @@ export default function Home() {
   };
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen bg-gradient-to-br from-blue-300 via-purple-200 to-pink-200">
+    <div className="flex flex-col items-center justify-center min-h-screen bg-gradient-to-br from-blue-300 via-purple-200 to-pink-200 px-4">
       <motion.h1
-        className="text-5xl font-extrabold mb-10 text-gray-800 drop-shadow-lg"
+        className="text-4xl sm:text-5xl font-extrabold mb-8 text-gray-800 drop-shadow-lg"
         initial={{ opacity: 0, scale: 0.9 }}
         animate={{ opacity: 1, scale: 1 }}
         transition={{ duration: 0.5, ease: "easeOut" }}
       >
         Rock-Paper-Scissors Card Game
       </motion.h1>
-      <div className="flex gap-6">
+      <div className="flex flex-col sm:flex-row gap-4 sm:gap-6 w-full sm:w-auto">
         <Link href={`/vs-bot?${getQueryString()}`}>
           <motion.button
-            className="px-8 py-4 bg-blue-600 text-white text-lg font-semibold rounded-xl shadow-md hover:bg-blue-700 focus:ring-4 focus:ring-blue-300 transition"
+            className="px-6 py-3 bg-blue-600 text-white text-base sm:text-lg font-semibold rounded-xl shadow-md hover:bg-blue-700 focus:ring-4 focus:ring-blue-300 transition w-full sm:w-auto"
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
           >
@@ -103,7 +103,7 @@ export default function Home() {
             setIsSettingsOpen(true);
             console.log("Opened Settings modal");
           }}
-          className="px-8 py-4 bg-gray-600 text-white text-lg font-semibold rounded-xl shadow-md hover:bg-gray-700 focus:ring-4 focus:ring-gray-300 transition"
+          className="px-6 py-3 bg-gray-600 text-white text-base sm:text-lg font-semibold rounded-xl shadow-md hover:bg-gray-700 focus:ring-4 focus:ring-gray-300 transition w-full sm:w-auto"
           whileHover={{ scale: 1.05 }}
           whileTap={{ scale: 0.95 }}
         >
@@ -114,7 +114,7 @@ export default function Home() {
             setIsHowToPlayOpen(true);
             console.log("Opened How to Play modal");
           }}
-          className="px-8 py-4 bg-green-600 text-white text-lg font-semibold rounded-xl shadow-md hover:bg-green-700 focus:ring-4 focus:ring-green-300 transition"
+          className="px-6 py-3 bg-green-600 text-white text-base sm:text-lg font-semibold rounded-xl shadow-md hover:bg-green-700 focus:ring-4 focus:ring-green-300 transition w-full sm:w-auto"
           whileHover={{ scale: 1.05 }}
           whileTap={{ scale: 0.95 }}
         >
