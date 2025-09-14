@@ -203,9 +203,6 @@ function RPSBotGame() {
     openHand: getSettingsValue("openHand", "openHand", false) as boolean,
   };
 
-  // Log settings for debugging
-  console.log("Loaded settings:", settings);
-
   // Validate hand size against deck size
   const totalDeckSize = Object.values(settings.deck).reduce(
     (sum, count) => sum + count,
@@ -360,7 +357,6 @@ function RPSBotGame() {
   };
 
   // Get card counts
-  const handCounts = getCardCounts(state.playerHand);
   const playerPlayedCounts = getCardCounts(state.playerPlayedCards);
   const botPlayedCounts = getCardCounts(state.botPlayedCards);
 
